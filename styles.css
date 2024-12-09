@@ -1,0 +1,145 @@
+/* Body */
+body {
+    margin: 0;
+    padding: 0;
+    width: 500px;
+    height: auto;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(120, 113, 113, 0.9);
+    border-radius: 50px;
+}
+
+/* Popup Container */
+.popup-container {
+    position: relative;
+    width: 100%;
+    min-height: 300px;
+    background-color: rgba(120, 113, 113, 0.9);
+    border-radius: 30px; /* Circular corners */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: stretch;
+    overflow: hidden; /* Ensure no child content spills out */
+}
+
+/* Close Button */
+.close-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: red;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    padding: 10px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.close-button:hover {
+    background-color: #b91c1c;
+    transform: scale(1.1);
+}
+
+/* Flex Container for Joke and Avatar */
+.flex-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 20px 0;
+}
+
+/* Avatar Image */
+.avatar {
+    width: 120px; /* Increased size */
+    height: 120px; /* Increased size */
+    margin-top: 5rem;
+    border-radius: 50%;
+    transform: scaleX(-1); /* Flip the image */
+    position: absolute; /* Make it absolutely positioned */
+    top: 20px; /* Adjust vertical position */
+    right: 20px; /* Adjust horizontal position */
+}
+
+/* Joke Container */
+#joke-container {
+    flex: 1;
+    background-color: #f3f4f6;
+    padding: 20px;
+    border-radius: 30px;
+    font-size: 18px;
+    line-height: 1.6;
+    color: #111827;
+    text-align: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin-right: 40px;
+}
+
+/* Green Button */
+.button-green {
+    background-color: #16a34a; /* Green */
+    color: white; /* White text */
+    font-weight: bold;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Optional shadow */
+}
+
+.button-green:hover {
+    background-color: #15803d; /* Darker green on hover */
+    transform: scale(1.1); /* Slight enlargement on hover */
+}
+
+/* Button Container */
+.button-container {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+}
+
+/* General Button Styles */
+.button {
+    flex: 1;
+    max-width: 120px;
+    padding: 12px;
+    border-radius: 15px; /* Rounded edges for buttons */
+    cursor: pointer;
+    border: none;
+    font-size: 16px;
+    font-weight: bold;
+    color: white;
+    transition: transform 0.2s ease, box-shadow 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.button:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Blue Button */
+.button-blue {
+    background-color: #3b82f6;
+}
+
+.button-blue:hover {
+    background-color: #2563eb;
+}
+
+/* Red Button */
+.button-red {
+    background-color: #f87171;
+}
+
+.button-red:hover {
+    background-color: #ef4444;
+}
