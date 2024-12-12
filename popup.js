@@ -147,34 +147,3 @@ function closePopup() {
   window.close();
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  const blogContainer = document.getElementById("joke-container"); // Reuse this container
-  const fetchBlogButton = document.getElementById("fetch-blog-button");
-
-  fetchBlogButton.addEventListener("click", async () => {
-    try {
-      // Fetch blog data from your Next.js API
-      const response = await fetch('https://blogsbyjc.vercel.app/api/blogs', {
-        method: 'GET',
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      const { title, snippet, url } = data;
-
-      blogContainer.innerHTML = `
-        <h3>Current Blog</h3>
-        <p><strong>${title}</strong></p>
-        <p>${snippet}</p>
-        <a href="${url}" target="_blank">Read More</a>
-      `;
-    } catch (error) {
-      console.error("Failed to fetch blog:", error);
-      blogContainer.innerHTML = `<p>Oops! Could not fetch the blog. Please try again later.</p>`;
-    }
-  });
-});
-
