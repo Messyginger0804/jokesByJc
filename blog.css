@@ -1,0 +1,80 @@
+/* Layout */
+.blog-layout {
+    display: flex;
+    gap: 16px; /* Space between the image and the text */
+    align-items: flex-start;
+    margin-top: 20px;
+  }
+  
+  /* Blog Image Wrapper */
+  .blog-image-wrapper {
+    flex-shrink: 0; /* Prevent the image from shrinking */
+    width: 150px;
+    height: auto;
+    overflow: hidden;
+    border-radius: 10px;
+  }
+  
+  .blog-image {
+    width: 100%;
+    height: auto;
+    transition: transform 0.3s ease;
+  }
+  
+  .blog-image-wrapper:hover .blog-image {
+    transform: scale(1.05); /* Zoom effect */
+  }
+  
+  /* Blog Content */
+  .blog-content {
+    flex: 1; /* Allow the text content to take the remaining space */
+    display: flex;
+    flex-direction: column;
+    gap: 8px; /* Space between title and description */
+  }
+  
+  .blog-title {
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+    text-decoration: none;
+    transition: all 0.5s ease;
+  }
+  
+  .blog-title::after {
+    content: "";
+    display: block;
+    width: 0;
+    height: 2px;
+    background: linear-gradient(to right, #ff9800, #ff5722); /* Custom gradient */
+    transition: width 0.5s;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+  }
+  
+  .blog-title:hover::after {
+    width: 100%; /* Underline animation */
+  }
+  
+  .blog-description {
+    font-size: 10px;
+    color: #555;
+    line-height: 1.5;
+  }
+
+  html {
+    overflow-y: scroll;
+  }
+
+  .fake-image {
+    position: absolute;
+    bottom: 5px; /* Space from the bottom */
+    right: 10px; /* Space from the right */
+    width: 70px; /* Adjust as needed */
+    height: auto;
+    border-radius: 50%; /* Circular image */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    z-index: 10; /* Ensure it's above other elements */
+    overflow: visible;
+  }
