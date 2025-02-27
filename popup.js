@@ -41,7 +41,7 @@ function initializeJoke() {
   const jokeElement = document.getElementById("joke");
 
   if (avatar) {
-    avatar.src = "./images/thinking.png"; // Replace with the path to your "thinking" image
+    avatar.src = "./images/thinking.png";
     avatar.className = "avatar";
   }
 
@@ -50,34 +50,60 @@ function initializeJoke() {
     typeWriterEffect("joke", "Thinking of a good one...", 50);
   }
 
-  // Wait for 2 seconds before fetching the joke
+  // Wait for 2 seconds before trying to get a joke
   setTimeout(() => {
-    fetch("https://official-joke-api.appspot.com/random_joke")
-      .then((response) => response.json())
-      .then((data) => {
-        currentJoke = {
-          setup: data.setup,
-          punchline: data.punchline,
-        };
-
-        // Change the avatar to the intro image once the data is retrieved
-        if (avatar) {
-          avatar.src = "./images/intro.png";
+    // Attempt to fetch a random joke from the local jokes JSON file
+    fetch("./jokes.json")
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("Local jokes file not available");
         }
-
-        // Use typewriter effect for setup text
-        typeWriterEffect("joke", currentJoke.setup, 50, showPunchlineButton);
+        return response.json();
       })
-      .catch((error) => {
-        console.error("Error fetching joke:", error);
+      .then(data => {
+        // Expecting data to be an object with a "jokes" array
+        if (data.jokes && Array.isArray(data.jokes) && data.jokes.length > 0) {
+          // Pick a random joke from the array
+          const randomIndex = Math.floor(Math.random() * data.jokes.length);
+          currentJoke = data.jokes[randomIndex];
 
-        // Set the text to an error message if fetching fails
-        typeWriterEffect("joke", "Oops! Could not fetch a joke.", 50);
+          // Log that the joke came from the local JSON file
+          console.log("Joke fetched from local jokes JSON.");
 
-        // Change the avatar to the intro image even on error
-        if (avatar) {
-          avatar.src = "./images/intro.png";
+          if (avatar) {
+            avatar.src = "./images/intro.png";
+          }
+          typeWriterEffect("joke", currentJoke.setup, 50, showPunchlineButton);
+        } else {
+          throw new Error("No jokes found in local file");
         }
+      })
+      .catch(localError => {
+        console.error("Local joke error:", localError);
+        // Fallback to the API if local joke is not available
+        fetch("https://official-joke-api.appspot.com/random_joke")
+          .then(response => response.json())
+          .then(data => {
+            currentJoke = {
+              setup: data.setup,
+              punchline: data.punchline,
+            };
+
+            // Log that the joke came from the API
+            console.log("Joke fetched from the API.");
+
+            if (avatar) {
+              avatar.src = "./images/intro.png";
+            }
+            typeWriterEffect("joke", currentJoke.setup, 50, showPunchlineButton);
+          })
+          .catch(apiError => {
+            console.error("Error fetching joke from API:", apiError);
+            typeWriterEffect("joke", "Oops! Could not fetch a joke.", 50);
+            if (avatar) {
+              avatar.src = "./images/intro.png";
+            }
+          });
       });
   }, 2000);
 }

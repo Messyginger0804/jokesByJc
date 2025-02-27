@@ -177,11 +177,12 @@ body {
     color: black;
     width: fit-content;
     padding: 10px 20px;
-    font-size: 6px;
     font-weight: bold;
     border-radius: 20px;
     text-align: center;
+    letter-spacing: 0.05em;      /* Added tracking/letter spacing */
     position: absolute;
+    font-size: 10px;
     left: 50%;
     transform: translateX(-50%);
     animation: growAndPop 2s ease-in-out infinite; /* Add animation */

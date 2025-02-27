@@ -1,23 +1,308 @@
-[
+{
+  "jokes": [
     {
-      "setup": "Why don't scientists trust atoms?",
-      "punchline": "Because they make up everything!"
+      "setup": "How did I know my girlfriend thought I was invading her privacy?",
+      "punchline": "She wrote about it in her diary."
     },
     {
-      "setup": "What do you call fake spaghetti?",
-      "punchline": "An impasta!"
+      "setup": "Why did the electric car feel discriminated against?",
+      "punchline": "Because the rules weren't current."
     },
     {
-      "setup": "Why don’t skeletons fight each other?",
-      "punchline": "They don’t have the guts!"
+      "setup": "I'm such a good navigator,",
+      "punchline": "a self-driving car once asked me for directions."
     },
     {
-      "setup": "Why did the scarecrow win an award?",
-      "punchline": "Because he was outstanding in his field!"
+      "setup": "Why do melons have weddings?",
+      "punchline": "They cantelope."
     },
     {
-      "setup": "Why don’t eggs tell jokes?",
-      "punchline": "They’d crack each other up."
+      "setup": "What did the bison say to his son when he left the ranch?",
+      "punchline": "Bi-son."
+    },
+    {
+      "setup": "Watch what you say around the egg whites.",
+      "punchline": "They can't take a yolk."
+    },
+    {
+      "setup": "I'm so good at fixing things,",
+      "punchline": "my motto is, 'If it is broke, I'll still fix it.'"
+    },
+    {
+      "setup": "Where did the pumpkins have their meeting?",
+      "punchline": "In the gourdroom."
+    },
+    {
+      "setup": "What's the best way to save your dad jokes?",
+      "punchline": "In a dadda-base."
+    },
+    {
+      "setup": "I got a new pen that can write under water.",
+      "punchline": "It can write other words too."
+    },
+    {
+      "setup": "My boss said 'dress for the job you want, not for the job you have.'",
+      "punchline": "So I went in as Batman."
+    },
+    {
+      "setup": "I went to the aquarium this weekend, but I didn't stay long.",
+      "punchline": "There's something fishy about that place."
+    },
+    {
+      "setup": "What do you call a sheep who can sing and dance?",
+      "punchline": "Lady Ba Ba."
+    },
+    {
+      "setup": "What do you call a French man wearing sandals?",
+      "punchline": "Philipe Fallop."
+    },
+    {
+      "setup": "Why can't dinosaurs clap their hands?",
+      "punchline": "Because they're extinct."
+    },
+    {
+      "setup": "I gave my handyman a to-do list, but he only did jobs 1, 3, and 5.",
+      "punchline": "Turns out he only does odd jobs."
+    },
+    {
+      "setup": "Why should you never take sides in an argument at the dinner table?",
+      "punchline": "Trick question. It's the perfect time to take sides because no one's paying attention. Bring Tupperware."
+    },
+    {
+      "setup": "Who won the neck decorating contest?",
+      "punchline": "It was a tie."
+    },
+    {
+      "setup": "Where do rainbows go when they've been bad?",
+      "punchline": "To prism, so they have time to reflect on what they've done."
+    },
+    {
+      "setup": "Dogs can't operate MRI machines.",
+      "punchline": "But catscan."
+    },
+    {
+      "setup": "What do mermaids use to wash their fins?",
+      "punchline": "Tide."
+    },
+    {
+      "setup": "What did the skillet eat on its birthday?",
+      "punchline": "Pan-cakes."
+    },
+    {
+      "setup": "Why couldn't the produce manager make it to work?",
+      "punchline": "He could drive, but he didn't avocado."
+    },
+    {
+      "setup": "I went to a silent auction.",
+      "punchline": "I won a dog whistle and two mimes."
+    },
+    {
+      "setup": "How is my wallet like an onion?",
+      "punchline": "Every time I open it, I cry."
+    },
+    {
+      "setup": "What do you call a dog who meditates?",
+      "punchline": "Aware wolf."
+    },
+    {
+      "setup": "What kind of fish do penguins catch at night?",
+      "punchline": "Star fish."
+    },
+    {
+      "setup": "Which vegetable has the best kung fu?",
+      "punchline": "Broc-lee."
+    },
+    {
+      "setup": "Can a frog jump higher than a house?",
+      "punchline": "Of course, a house can't jump."
+    },
+    {
+      "setup": "I was going to try an all almond diet,",
+      "punchline": "but that's just nuts."
+    },
+    {
+      "setup": "I once submitted 10 puns to a joke competition. I really thought with that many, one was sure to be a winner.",
+      "punchline": "Sadly, no pun in ten did."
+    },
+    {
+      "setup": "Why did the 1/2 blind man fall down the well?",
+      "punchline": "He couldn't see that well."
+    },
+    {
+      "setup": "I tried to make up a joke about ghost but I couldn't.",
+      "punchline": "It had plenty of spirit but no body."
+    },
+    {
+      "setup": "What is the difference between a piano, a tuna, and a pot of glue?",
+      "punchline": "You can tuna piano but you can't piano a tuna. I knew you'd get stuck on the glue part."
+    },
+    {
+      "setup": "Two windmills were sitting on a hill. One asks the other, 'Do you have a favorite song?'",
+      "punchline": "The other replies, 'Well... all my life I have been a heavy metal fan.'"
+    },
+    {
+      "setup": "Today at the bank, an old lady asked me to check her balance...",
+      "punchline": "So I pushed her over."
+    },
+    {
+      "setup": "I took an origami class. I got an A...",
+      "punchline": "when I turned my paper into my teacher."
+    },
+    {
+      "setup": "How many storm troopers does it take to change a lightbulb?",
+      "punchline": "None, because they are all on the dark side."
+    },
+    {
+      "setup": "If your house is cold, just stand in the corner.",
+      "punchline": "It's always 90 degrees there."
+    },
+    {
+      "setup": "Did you hear about the guy who went to the doctor for a headache?... The doctor examined his ear and found money. The doctor kept pulling and pulling it out until he had $1,999.",
+      "punchline": "Then the doctor said, 'No wonder you're not feeling two grand!'"
+    },
+    {
+      "setup": "Dad, when he puts the car in reverse:",
+      "punchline": "Ah, this takes me back."
+    },
+    {
+      "setup": "What do you call the security guards for Samsung?",
+      "punchline": "Guardians of the galaxy."
+    },
+    {
+      "setup": "I was making a joke about retirement.",
+      "punchline": "It did not work."
+    },
+    {
+      "setup": "The other day I bought a thesaurus, but when I got home and opened it, all the pages were blank.",
+      "punchline": "I have no word to describe how angry I am."
+    },
+    {
+      "setup": "The owner of the tuxedo store kept hovering over me when I was browsing, so I asked him to leave me alone.",
+      "punchline": "He said, 'Fine, suit yourself.'"
+    },
+    {
+      "setup": "Did you hear about the kidnapping at school?",
+      "punchline": "He woke up."
+    },
+    {
+      "setup": "I found a book called How to Solve 50% of Your Problems.",
+      "punchline": "So I bought 2."
+    },
+    {
+      "setup": "Why did the coffee taste like dirt?",
+      "punchline": "Because it was ground just a few minutes ago."
+    },
+    {
+      "setup": "What is the best present?",
+      "punchline": "Broken drums! You can't beat them."
+    },
+    {
+      "setup": "I made song about tortilla once,",
+      "punchline": "now it's more like a wrap."
+    },
+    {
+      "setup": "Did you know corduroy pillows are in style?",
+      "punchline": "They're making headlines."
+    },
+    {
+      "setup": "What does a nosey pepper do?",
+      "punchline": "It gets jalapeño business."
+    },
+    {
+      "setup": "Did you hear about the fragile myth?",
+      "punchline": "It was busted."
+    },
+    {
+      "setup": "What word can you make shorter by adding two letters?",
+      "punchline": "Short."
+    },
+    {
+      "setup": "What do call a criminal landing an airplane?",
+      "punchline": "Condescending."
+    },
+    {
+      "setup": "I stayed up all night wondering where the sun went,",
+      "punchline": "and then it dawned on me."
+    },
+    {
+      "setup": "Why do people who live in Greece hate waking up at dawn?",
+      "punchline": "Because Dawn is tough on Greece."
+    },
+    {
+      "setup": "How do you make holy water?",
+      "punchline": "You boil the hell out of it."
+    },
+    {
+      "setup": "Why are Christmas trees bad at knitting?",
+      "punchline": "They always drop their needles."
+    },
+    {
+      "setup": "What did the lunch box say to the refrigerator?",
+      "punchline": "Don't hate me because I'm a little cooler."
+    },
+    {
+      "setup": "What do you do to have a space party?",
+      "punchline": "You planet."
+    },
+    {
+      "setup": "Why couldn't the tree get on his computer?",
+      "punchline": "Because he could not log on."
+    },
+    {
+      "setup": "What did the grape say when it got stepped on?",
+      "punchline": "Nothing, just a little wine."
+    },
+    {
+      "setup": "Me: 'I want to write when I grow up.' Dad:",
+      "punchline": "'Why don't you left instead?'"
+    },
+    {
+      "setup": "Why didn't the lifeguard save the hippie?",
+      "punchline": "He was too far out!"
+    },
+    {
+      "setup": "I'd like to shout out sidewalks",
+      "punchline": "for keeping me off the streets."
+    },
+    {
+      "setup": "What did the computer go to the doctor?",
+      "punchline": "Because he had a virus."
+    },
+    {
+      "setup": "How many ears does Captain Kirk have?",
+      "punchline": "Three. The left ear, the right ear, and the final front-ear."
+    },
+    {
+      "setup": "Did you hear about the famous pickle?",
+      "punchline": "He's a really big dill."
+    },
+    {
+      "setup": "What do you need to make a highway in an art studio?",
+      "punchline": "A mile marker."
+    },
+    {
+      "setup": "What has four wheels and flies?",
+      "punchline": "A garbage truck."
+    },
+    {
+      "setup": "How much does a chimney cost?",
+      "punchline": "Nothing, it's on the house."
+    },
+    {
+      "setup": "Why do only some couples go to the gym?",
+      "punchline": "Because some relationships don't work out."
+    },
+    {
+      "setup": "You don't need a parachute to go skydiving.",
+      "punchline": "You need one to go skydiving twice."
+    },
+    {
+      "setup": "Why is sausage bad for you?",
+      "punchline": "It brings out the Wurst in people."
+    },
+    {
+      "setup": "What do you call a broken clock?",
+      "punchline": "A waste of time."
     }
   ]
-  
+}

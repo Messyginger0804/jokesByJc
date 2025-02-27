@@ -2,14 +2,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   const blogContainer = document.getElementById("blog-container");
 
   try {
-    const response = await fetch("https://blogsbyjc.vercel.app/api/blogs");
+    const response = await fetch("https://byjc.dev/api/blog-of-the-month");
     if (!response.ok) {
       throw new Error(`HTTP error! Status: ${response.status}`);
     }
 
     const data = await response.json();
     const { title, url, snippet } = data;
-    const mainImage = `https://blogsbyjc.vercel.app/blog-images/jwt.png`; // Main image
+    const mainImage = `https://byjc.dev/blog-images/internship.png`;
     const fakeImage = `./images/pointing.png`;
 
     blogContainer.innerHTML = `
@@ -28,6 +28,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     `;
   } catch (error) {
     console.error("Error fetching blog:", error);
-    blogContainer.innerHTML = `<p>Failed to load the blog.</p>`;
+    blogContainer.innerHTML = `
+      <img src="./images/coolguy.png" alt="Fake description image" class="cool-image" />
+      `;
   }
 });
