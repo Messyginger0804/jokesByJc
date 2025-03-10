@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Jokes By JC",
   "description": "A fun extension where a character tells a joke.",
-  "version": "1.0",
+  "version": "2.3",
   "permissions": ["alarms", "storage"],
   "background": {
     "service_worker": "background.js"
