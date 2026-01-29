@@ -5,10 +5,18 @@ let currentJoke = {};
 /**
  * Attaches an onerror handler to the avatar element to gracefully handle image load failures.
  * Hides the avatar if the image fails to load to prevent broken image icons.
+ * Uses a flag to prevent multiple handler attachments and memory leaks.
  * @param {HTMLImageElement} avatarEl - The avatar image element.
  */
 function handleAvatarError(avatarEl) {
   if (!avatarEl) return;
+
+  // Clear any existing handler first to prevent orphaned closures
+  avatarEl.onerror = null;
+
+  // Reset visibility in case it was hidden from a previous error
+  avatarEl.style.visibility = 'visible';
+
   avatarEl.onerror = function() {
     console.error('Avatar failed to load:', this.src);
     this.style.visibility = 'hidden';
