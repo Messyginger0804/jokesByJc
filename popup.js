@@ -65,8 +65,13 @@ function getRandomApi() {
   return jokeApis[Math.floor(Math.random() * jokeApis.length)];
 }
 
+// Cache media query result to avoid creating new MediaQueryList on each call
+const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+
 /**
  * Creates a typewriter effect for the given text.
+ * Respects prefers-reduced-motion preference for accessibility.
+ * Uses aria-busy to prevent screen readers from announcing during animation.
  * @param {string} elementId - The ID of the element where the text will be displayed.
  * @param {string} text - The text to type out.
  * @param {number} speed - Speed of typing in milliseconds.
@@ -76,6 +81,26 @@ function typeWriterEffect(elementId, text, speed, callback) {
   const element = document.getElementById(elementId);
   if (!element) return;
 
+  const container = document.getElementById("joke-container");
+  const prefersReducedMotion = reducedMotionQuery.matches;
+
+  // If user prefers reduced motion, show text instantly for accessibility
+  if (prefersReducedMotion) {
+    element.textContent = text;
+    if (container) {
+      container.setAttribute("aria-busy", "false");
+    }
+    if (callback) {
+      callback();
+    }
+    return;
+  }
+
+  // Set aria-busy to prevent screen readers from announcing character-by-character
+  if (container) {
+    container.setAttribute("aria-busy", "true");
+  }
+
   element.textContent = "";
   let i = 0;
 
@@ -84,8 +109,14 @@ function typeWriterEffect(elementId, text, speed, callback) {
       element.textContent += text.charAt(i);
       i++;
       setTimeout(typeWriter, speed);
-    } else if (callback) {
-      callback();
+    } else {
+      // Animation complete - allow screen reader to announce
+      if (container) {
+        container.setAttribute("aria-busy", "false");
+      }
+      if (callback) {
+        callback();
+      }
     }
   }
 
