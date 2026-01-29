@@ -177,6 +177,25 @@ function showPunchlineButton() {
     return;
   }
 
+  // For one-liners, skip punchline step and go directly to "Get another joke"
+  if (currentJoke.isOneLiner) {
+    const avatar = document.querySelector(".avatar");
+    if (avatar) {
+      avatar.src = "./images/lol.png";
+      handleAvatarError(avatar);
+    }
+
+    buttonContainer.innerHTML = `
+      <button id="joke-again-button" class="button button-blue">Get another joke!</button>
+    `;
+
+    const jokeAgainButton = document.getElementById("joke-again-button");
+    if (jokeAgainButton) {
+      jokeAgainButton.addEventListener("click", initializeJoke);
+    }
+    return;
+  }
+
   // Replace Yes/No buttons with the "See the punchline" button
   buttonContainer.innerHTML = `
     <button id="joke-button" class="button button-green">See the punchline!</button>
