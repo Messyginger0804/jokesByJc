@@ -227,13 +227,13 @@ function revealPunchline() {
       }
 
       buttonContainer.innerHTML = `
-        <button id="joke-again-button" class="button button-blue">Hear the joke again!</button>
+        <button id="joke-again-button" class="button button-blue">Get another joke!</button>
       `;
 
-      // Add event listener for the "Hear the joke again" button
+      // Add event listener for the "Get another joke" button
       const jokeAgainButton = document.getElementById("joke-again-button");
       if (jokeAgainButton) {
-        jokeAgainButton.addEventListener("click", hearJokeAgain);
+        jokeAgainButton.addEventListener("click", initializeJoke);
       }
     });
   }
