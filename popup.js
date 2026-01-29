@@ -55,8 +55,8 @@ const jokeApis = [
           };
         }
       }
-      // If no split found, show whole joke as setup with a reveal
-      return { setup: joke, punchline: "😄" };
+      // If no split found, treat as one-liner (skip punchline step)
+      return { setup: joke, punchline: null, isOneLiner: true };
     }
   }
 ];
