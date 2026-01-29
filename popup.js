@@ -239,18 +239,6 @@ function revealPunchline() {
   }
 }
 
-function hearJokeAgain() {
-  // Re-display the setup using the typewriter effect
-  typeWriterEffect("joke", currentJoke.setup, 50, showPunchlineButton);
-
-  // Update the avatar to the intro image
-  const avatar = document.querySelector(".avatar");
-  if (avatar) {
-    avatar.src = "./images/intro.png";
-    handleAvatarError(avatar);
-  }
-}
-
 function closePopup() {
   window.close();
 }
