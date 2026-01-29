@@ -45,6 +45,7 @@ function cacheJoke(joke) {
     setup: joke.setup,
     punchline: joke.punchline || null,
     isOneLiner: joke.isOneLiner || false,
+    punchlineShown: false,
     timestamp: Date.now()
   };
 
@@ -320,6 +321,13 @@ function showPunchlineButton() {
 
 function revealPunchline() {
   if (currentJoke.punchline) {
+    // Update cache to mark punchline as shown
+    try {
+      chrome.storage.local.set({ lastJoke: { ...currentJoke, punchlineShown: true } });
+    } catch (error) {
+      console.error('Failed to update punchlineShown in cache:', error);
+    }
+
     // Use typewriter effect for punchline
     typeWriterEffect("joke", currentJoke.punchline, 50, () => {
       // Update the avatar to the laughing image
