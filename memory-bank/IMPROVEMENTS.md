@@ -4,18 +4,12 @@ A list of potential improvements for the extension.
 
 ## Bugs / Issues
 
-- [ ] **Hardcoded blog image** - `blog.js:12` uses a hardcoded image URL instead of data from the API response
-- [ ] **Duplicate blog link** - `popup.html:29` has a hardcoded blog link while `blog.js` fetches dynamic content
 - [ ] **No image error handling** - If avatar images fail to load, there's no fallback
 - [ ] **icanhazdadjoke single-line handling** - Single-line jokes from icanhazdadjoke API don't always split well into setup/punchline. Currently falls back to showing whole joke with 😄 emoji. Consider: skipping punchline step for one-liners, or using a different display flow for this API
 
 ## UX Improvements
 
 - [ ] **No "New Joke" button** - After the punchline, users can only replay the same joke, not get a new one
-- [ ] **2-second forced wait** - The "thinking" delay (`popup.js:54`) can't be skipped
-- [ ] **No joke history** - Same jokes can repeat since there's no tracking of shown jokes
-- [ ] **No way to disable daily popup** - Users can't turn off the automatic reminder from settings
-- [ ] **Missing keyboard support** - No keyboard shortcuts or focus management
 
 ## Accessibility
 
