@@ -19,12 +19,29 @@ function loadCachedJoke() {
         }
 
         if (buttonContainer) {
-          buttonContainer.innerHTML = `
-            <button id="joke-again-button" class="button button-blue" aria-label="Get another joke">Get another joke!</button>
-          `;
-          const jokeAgainButton = document.getElementById("joke-again-button");
-          if (jokeAgainButton) {
-            jokeAgainButton.addEventListener("click", initializeJoke);
+          // Check if punchline exists and hasn't been shown yet
+          // Treat undefined punchlineShown as true (shown) for backward compatibility
+          const hasPunchline = currentJoke.punchline && !currentJoke.isOneLiner;
+          const punchlineNotShown = currentJoke.punchlineShown === false;
+
+          if (hasPunchline && punchlineNotShown) {
+            // Show "See the punchline!" button for unrevealed two-part jokes
+            buttonContainer.innerHTML = `
+              <button id="joke-button" class="button button-green" aria-label="See the punchline of the joke">See the punchline!</button>
+            `;
+            const jokeButton = document.getElementById("joke-button");
+            if (jokeButton) {
+              jokeButton.addEventListener("click", revealPunchline);
+            }
+          } else {
+            // Show "Get another joke!" for one-liners or already-revealed jokes
+            buttonContainer.innerHTML = `
+              <button id="joke-again-button" class="button button-blue" aria-label="Get another joke">Get another joke!</button>
+            `;
+            const jokeAgainButton = document.getElementById("joke-again-button");
+            if (jokeAgainButton) {
+              jokeAgainButton.addEventListener("click", initializeJoke);
+            }
           }
         }
       }
