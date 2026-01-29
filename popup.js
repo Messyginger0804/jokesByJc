@@ -3,6 +3,27 @@ document.addEventListener("DOMContentLoaded", initializePopup);
 let currentJoke = {};
 
 /**
+ * Saves the current joke to chrome.storage.local for instant display on popup reopen.
+ * @param {Object} joke - The joke object with setup, punchline, and optional isOneLiner flag.
+ */
+function cacheJoke(joke) {
+  if (!joke || !joke.setup) return;
+
+  const cacheData = {
+    setup: joke.setup,
+    punchline: joke.punchline || null,
+    isOneLiner: joke.isOneLiner || false,
+    timestamp: Date.now()
+  };
+
+  try {
+    chrome.storage.local.set({ lastJoke: cacheData });
+  } catch (error) {
+    console.error('Failed to cache joke:', error);
+  }
+}
+
+/**
  * Attaches an onerror handler to the avatar element to gracefully handle image load failures.
  * Hides the avatar if the image fails to load to prevent broken image icons.
  * Uses a flag to prevent multiple handler attachments and memory leaks.
@@ -160,6 +181,7 @@ function initializeJoke() {
       .then(data => {
         currentJoke = api.parseJoke(data);
         console.log(`Joke fetched from ${api.name}`);
+        cacheJoke(currentJoke);
 
         if (avatar) {
           avatar.src = "./images/intro.png";
@@ -178,6 +200,7 @@ function initializeJoke() {
               currentJoke = data.jokes[randomIndex];
 
               console.log("Joke fetched from local JSON (fallback).");
+              cacheJoke(currentJoke);
 
               if (avatar) {
                 avatar.src = "./images/intro.png";
