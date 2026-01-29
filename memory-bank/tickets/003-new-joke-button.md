@@ -1,7 +1,7 @@
 # Ticket 003: Add "New Joke" Button
 
 **Category:** UX Improvement
-**Status:** Open
+**Status:** Closed
 **Priority:** High
 
 ## Description
@@ -31,6 +31,25 @@ Or replace with single "New Joke" button.
 
 ## Acceptance Criteria
 
-- [ ] Users can request a new joke after seeing the punchline
-- [ ] New joke fetches from random API (existing logic)
-- [ ] UI flow remains smooth and intuitive
+- [x] Users can request a new joke after seeing the punchline
+- [x] New joke fetches from random API (existing logic)
+- [x] UI flow remains smooth and intuitive
+
+---
+
+## Implementation Notes (Closure)
+
+**Closed:** 2026-01-28
+
+**Implementation Summary:**
+- Single "Get another joke!" button approach was chosen (cleaner UX than two-button option)
+- Button appears after punchline reveal in `revealPunchline()` function (`popup.js:229-231`)
+- Button also handles one-liner jokes in `showPunchlineButton()` function (`popup.js:188-190`)
+- Clicking button calls `initializeJoke()` which fetches from a random API
+
+**Related Commits:**
+- `c77ffe9`: feat(T1): update parseJoke to return isOneLiner flag for icanhazdadjoke
+- `8e751f7`: feat(T2): handle one-liners in showPunchlineButton
+- `81ea54f`: feat(T3): update button text to 'Get another joke!' for consistency
+
+**Verification:** All acceptance criteria verified via code review on 2026-01-28
