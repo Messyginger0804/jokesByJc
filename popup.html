@@ -8,20 +8,20 @@
   <body>
     <div class="popup-container">
       <!-- Close button -->
-      <button id="close-popup" class="close-button">CLOSE</button>
+      <button id="close-popup" class="close-button" aria-label="Close extension popup">CLOSE</button>
 
       <!-- Joke and Avatar Section -->
       <div class="flex-container">
-        <div id="joke-container">
+        <div id="joke-container" aria-live="polite" role="status">
           <p id="joke">Hey, wanna hear a joke?</p>
         </div>
-        <img src="images/intro.png" alt="Avatar" class="avatar" />
+        <img src="images/intro.png" alt="JC mascot avatar" class="avatar" />
       </div>
 
       <!-- Button Section -->
       <div class="button-container">
-        <button id="yes-button" class="button button-blue">Yes</button>
-        <button id="no-button" class="button button-red">No</button>
+        <button id="yes-button" class="button button-blue" aria-label="Yes, tell me a joke">Yes</button>
+        <button id="no-button" class="button button-red" aria-label="No thanks, close popup">No</button>
       </div>
 
       <!-- Blog Information Section -->
