@@ -2,6 +2,47 @@ document.addEventListener("DOMContentLoaded", initializePopup);
 
 let currentJoke = {};
 
+// Multiple joke APIs to randomly pick from
+const jokeApis = [
+  {
+    name: "Official Joke API",
+    url: "https://official-joke-api.appspot.com/random_joke",
+    headers: {},
+    parseJoke: (data) => ({ setup: data.setup, punchline: data.punchline })
+  },
+  {
+    name: "JokeAPI",
+    url: "https://v2.jokeapi.dev/joke/Pun,Misc?type=twopart&safe-mode",
+    headers: {},
+    parseJoke: (data) => ({ setup: data.setup, punchline: data.delivery })
+  },
+  {
+    name: "icanhazdadjoke",
+    url: "https://icanhazdadjoke.com/",
+    headers: { "Accept": "application/json" },
+    parseJoke: (data) => {
+      // Single-line joke - split at common patterns or show as one-liner
+      const joke = data.joke;
+      const splitPatterns = [" - ", "? ", "! "];
+      for (const pattern of splitPatterns) {
+        const index = joke.indexOf(pattern);
+        if (index > 0 && index < joke.length - 5) {
+          return {
+            setup: joke.substring(0, index + pattern.trim().length),
+            punchline: joke.substring(index + pattern.length)
+          };
+        }
+      }
+      // If no split found, show whole joke as setup with a reveal
+      return { setup: joke, punchline: "😄" };
+    }
+  }
+];
+
+function getRandomApi() {
+  return jokeApis[Math.floor(Math.random() * jokeApis.length)];
+}
+
 /**
  * Creates a typewriter effect for the given text.
  * @param {string} elementId - The ID of the element where the text will be displayed.
@@ -52,53 +93,47 @@ function initializeJoke() {
 
   // Wait for 2 seconds before trying to get a joke
   setTimeout(() => {
-    // Attempt to fetch a random joke from the local jokes JSON file
-    fetch("./jokes.json")
+    // Pick a random API
+    const api = getRandomApi();
+
+    fetch(api.url, { headers: api.headers })
       .then(response => {
         if (!response.ok) {
-          throw new Error("Local jokes file not available");
+          throw new Error("API not available");
         }
         return response.json();
       })
       .then(data => {
-        // Expecting data to be an object with a "jokes" array
-        if (data.jokes && Array.isArray(data.jokes) && data.jokes.length > 0) {
-          // Pick a random joke from the array
-          const randomIndex = Math.floor(Math.random() * data.jokes.length);
-          currentJoke = data.jokes[randomIndex];
+        currentJoke = api.parseJoke(data);
+        console.log(`Joke fetched from ${api.name}`);
 
-          // Log that the joke came from the local JSON file
-          console.log("Joke fetched from local jokes JSON.");
-
-          if (avatar) {
-            avatar.src = "./images/intro.png";
-          }
-          typeWriterEffect("joke", currentJoke.setup, 50, showPunchlineButton);
-        } else {
-          throw new Error("No jokes found in local file");
+        if (avatar) {
+          avatar.src = "./images/intro.png";
         }
+        typeWriterEffect("joke", currentJoke.setup, 50, showPunchlineButton);
       })
-      .catch(localError => {
-        console.error("Local joke error:", localError);
-        // Fallback to the API if local joke is not available
-        fetch("https://official-joke-api.appspot.com/random_joke")
+      .catch(apiError => {
+        console.error("API error:", apiError);
+        // Fallback to local jokes if API fails
+        fetch("./jokes.json")
           .then(response => response.json())
           .then(data => {
-            currentJoke = {
-              setup: data.setup,
-              punchline: data.punchline,
-            };
+            if (data.jokes && Array.isArray(data.jokes) && data.jokes.length > 0) {
+              const randomIndex = Math.floor(Math.random() * data.jokes.length);
+              currentJoke = data.jokes[randomIndex];
 
-            // Log that the joke came from the API
-            console.log("Joke fetched from the API.");
+              console.log("Joke fetched from local JSON (fallback).");
 
-            if (avatar) {
-              avatar.src = "./images/intro.png";
+              if (avatar) {
+                avatar.src = "./images/intro.png";
+              }
+              typeWriterEffect("joke", currentJoke.setup, 50, showPunchlineButton);
+            } else {
+              throw new Error("No jokes found");
             }
-            typeWriterEffect("joke", currentJoke.setup, 50, showPunchlineButton);
           })
-          .catch(apiError => {
-            console.error("Error fetching joke from API:", apiError);
+          .catch(localError => {
+            console.error("Local joke error:", localError);
             typeWriterEffect("joke", "Oops! Could not fetch a joke.", 50);
             if (avatar) {
               avatar.src = "./images/intro.png";

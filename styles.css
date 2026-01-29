@@ -159,16 +159,7 @@ body {
     transform: translateX(-50%);
     width: 80%;
   }
-  
-  /* Bottom Chat Bubble */
-  /* .bottom-bubble {
-    bottom: 20px;
-    background-color: whitesmoke;
-    color: black;
-    width: fit-content;
-    font-size: 6px;
-    margin-left: 25%;
-  } */
+
 /* Bottom Chat Bubble */
 .bottom-bubble {
     margin-left: 25%;
