@@ -17,6 +17,17 @@
     box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
 }
 
+.ad-logo {
+    max-width: 200px;
+    height: auto;
+    border-radius: 8px;
+}
+
+.ad-fallback {
+    align-items: center;
+    gap: 10px;
+}
+
 .ad-text {
     color: #111827;
     font-size: 14px;
