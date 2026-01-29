@@ -248,10 +248,31 @@ function initializeJoke() {
           })
           .catch(localError => {
             console.error("Local joke error:", localError);
-            typeWriterEffect("joke", "Oops! Could not fetch a joke.", 50);
-            if (avatar) {
-              avatar.src = "./images/intro.png";
-              handleAvatarError(avatar);
+            // Try cached joke as final fallback
+            try {
+              chrome.storage.local.get('lastJoke', (result) => {
+                if (result.lastJoke && result.lastJoke.setup) {
+                  currentJoke = result.lastJoke;
+                  console.log("Using cached joke as offline fallback.");
+                  if (avatar) {
+                    avatar.src = "./images/intro.png";
+                    handleAvatarError(avatar);
+                  }
+                  typeWriterEffect("joke", currentJoke.setup, 50, showPunchlineButton);
+                } else {
+                  typeWriterEffect("joke", "Oops! Could not fetch a joke.", 50);
+                  if (avatar) {
+                    avatar.src = "./images/intro.png";
+                    handleAvatarError(avatar);
+                  }
+                }
+              });
+            } catch (cacheError) {
+              typeWriterEffect("joke", "Oops! Could not fetch a joke.", 50);
+              if (avatar) {
+                avatar.src = "./images/intro.png";
+                handleAvatarError(avatar);
+              }
             }
           });
       });
