@@ -2,6 +2,20 @@ document.addEventListener("DOMContentLoaded", initializePopup);
 
 let currentJoke = {};
 
+/**
+ * Attaches an onerror handler to the avatar element to gracefully handle image load failures.
+ * Hides the avatar if the image fails to load to prevent broken image icons.
+ * @param {HTMLImageElement} avatarEl - The avatar image element.
+ */
+function handleAvatarError(avatarEl) {
+  if (!avatarEl) return;
+  avatarEl.onerror = function() {
+    console.error('Avatar failed to load:', this.src);
+    this.style.visibility = 'hidden';
+    this.onerror = null; // prevent infinite loops if fallback also fails
+  };
+}
+
 // Multiple joke APIs to randomly pick from
 const jokeApis = [
   {
@@ -84,6 +98,7 @@ function initializeJoke() {
   if (avatar) {
     avatar.src = "./images/thinking.png";
     avatar.className = "avatar";
+    handleAvatarError(avatar);
   }
 
   // Set "thinking" text
@@ -109,6 +124,7 @@ function initializeJoke() {
 
         if (avatar) {
           avatar.src = "./images/intro.png";
+          handleAvatarError(avatar);
         }
         typeWriterEffect("joke", currentJoke.setup, 50, showPunchlineButton);
       })
@@ -126,6 +142,7 @@ function initializeJoke() {
 
               if (avatar) {
                 avatar.src = "./images/intro.png";
+                handleAvatarError(avatar);
               }
               typeWriterEffect("joke", currentJoke.setup, 50, showPunchlineButton);
             } else {
@@ -137,6 +154,7 @@ function initializeJoke() {
             typeWriterEffect("joke", "Oops! Could not fetch a joke.", 50);
             if (avatar) {
               avatar.src = "./images/intro.png";
+              handleAvatarError(avatar);
             }
           });
       });
@@ -171,6 +189,7 @@ function revealPunchline() {
       const avatar = document.querySelector(".avatar");
       if (avatar) {
         avatar.src = "./images/lol.png";
+        handleAvatarError(avatar);
       }
 
       // Change button to "Hear the joke again"
@@ -201,6 +220,7 @@ function hearJokeAgain() {
   const avatar = document.querySelector(".avatar");
   if (avatar) {
     avatar.src = "./images/intro.png";
+    handleAvatarError(avatar);
   }
 }
 
