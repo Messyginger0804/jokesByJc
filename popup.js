@@ -3,6 +3,38 @@ document.addEventListener("DOMContentLoaded", initializePopup);
 let currentJoke = {};
 
 /**
+ * Loads the cached joke from chrome.storage.local and displays it immediately.
+ * Shows "Get another joke" button since user has already seen this joke.
+ */
+function loadCachedJoke() {
+  try {
+    chrome.storage.local.get('lastJoke', (result) => {
+      if (result.lastJoke && result.lastJoke.setup) {
+        currentJoke = result.lastJoke;
+        const jokeElement = document.getElementById("joke");
+        const buttonContainer = document.querySelector(".button-container");
+
+        if (jokeElement) {
+          jokeElement.textContent = currentJoke.setup;
+        }
+
+        if (buttonContainer) {
+          buttonContainer.innerHTML = `
+            <button id="joke-again-button" class="button button-blue" aria-label="Get another joke">Get another joke!</button>
+          `;
+          const jokeAgainButton = document.getElementById("joke-again-button");
+          if (jokeAgainButton) {
+            jokeAgainButton.addEventListener("click", initializeJoke);
+          }
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Failed to load cached joke:', error);
+  }
+}
+
+/**
  * Saves the current joke to chrome.storage.local for instant display on popup reopen.
  * @param {Object} joke - The joke object with setup, punchline, and optional isOneLiner flag.
  */
@@ -148,6 +180,9 @@ function initializePopup() {
   document.getElementById("yes-button").addEventListener("click", initializeJoke);
   document.getElementById("no-button").addEventListener("click", closePopup);
   document.getElementById("close-popup").addEventListener("click", closePopup);
+
+  // Load cached joke immediately for instant display
+  loadCachedJoke();
 }
 
 function initializeJoke() {
