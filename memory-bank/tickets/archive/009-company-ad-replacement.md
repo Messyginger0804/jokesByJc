@@ -1,7 +1,7 @@
 # Ticket 009: Replace Blog Section with Company Ad
 
 **Category:** Feature
-**Status:** Open
+**Status:** Closed
 **Priority:** Medium
 
 ## Description
@@ -37,10 +37,10 @@ Replace the current "Check out my blog!!!" section with a company advertisement 
 
 ## Acceptance Criteria
 
-- [ ] Blog bubble link removed
-- [ ] Blog container removed
-- [ ] Company logo displays correctly
-- [ ] "Need custom software?" text visible
-- [ ] dfwsc.com link works (opens in new tab)
-- [ ] Ad section styled to match popup theme
-- [ ] Unused blog code cleaned up
+- [x] Blog bubble link removed
+- [x] Blog container removed
+- [x] Company logo displays correctly
+- [x] "Need custom software?" text visible
+- [x] dfwsc.com link works (opens in new tab)
+- [x] Ad section styled to match popup theme
+- [x] Unused blog code cleaned up
