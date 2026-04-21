@@ -2,6 +2,99 @@ document.addEventListener("DOMContentLoaded", initializePopup);
 
 let currentJoke = {};
 
+/**
+ * Loads the cached joke from chrome.storage.local and displays it immediately.
+ * Shows "Get another joke" button since user has already seen this joke.
+ */
+function loadCachedJoke() {
+  try {
+    chrome.storage.local.get('lastJoke', (result) => {
+      if (result.lastJoke && result.lastJoke.setup) {
+        currentJoke = result.lastJoke;
+        const jokeElement = document.getElementById("joke");
+        const buttonContainer = document.querySelector(".button-container");
+
+        if (jokeElement) {
+          jokeElement.textContent = currentJoke.setup;
+        }
+
+        if (buttonContainer) {
+          // Check if punchline exists and hasn't been shown yet
+          // Treat undefined punchlineShown as true (shown) for backward compatibility
+          const hasPunchline = currentJoke.punchline && !currentJoke.isOneLiner;
+          const punchlineNotShown = currentJoke.punchlineShown === false;
+
+          if (hasPunchline && punchlineNotShown) {
+            // Show "See the punchline!" button for unrevealed two-part jokes
+            buttonContainer.innerHTML = `
+              <button id="joke-button" class="button button-green" aria-label="See the punchline of the joke">See the punchline!</button>
+            `;
+            const jokeButton = document.getElementById("joke-button");
+            if (jokeButton) {
+              jokeButton.addEventListener("click", revealPunchline);
+            }
+          } else {
+            // Show "Get another joke!" for one-liners or already-revealed jokes
+            buttonContainer.innerHTML = `
+              <button id="joke-again-button" class="button button-blue" aria-label="Get another joke">Get another joke!</button>
+            `;
+            const jokeAgainButton = document.getElementById("joke-again-button");
+            if (jokeAgainButton) {
+              jokeAgainButton.addEventListener("click", initializeJoke);
+            }
+          }
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Failed to load cached joke:', error);
+  }
+}
+
+/**
+ * Saves the current joke to chrome.storage.local for instant display on popup reopen.
+ * @param {Object} joke - The joke object with setup, punchline, and optional isOneLiner flag.
+ */
+function cacheJoke(joke) {
+  if (!joke || !joke.setup) return;
+
+  const cacheData = {
+    setup: joke.setup,
+    punchline: joke.punchline || null,
+    isOneLiner: joke.isOneLiner || false,
+    punchlineShown: false,
+    timestamp: Date.now()
+  };
+
+  try {
+    chrome.storage.local.set({ lastJoke: cacheData });
+  } catch (error) {
+    console.error('Failed to cache joke:', error);
+  }
+}
+
+/**
+ * Attaches an onerror handler to the avatar element to gracefully handle image load failures.
+ * Hides the avatar if the image fails to load to prevent broken image icons.
+ * Uses a flag to prevent multiple handler attachments and memory leaks.
+ * @param {HTMLImageElement} avatarEl - The avatar image element.
+ */
+function handleAvatarError(avatarEl) {
+  if (!avatarEl) return;
+
+  // Clear any existing handler first to prevent orphaned closures
+  avatarEl.onerror = null;
+
+  // Reset visibility in case it was hidden from a previous error
+  avatarEl.style.visibility = 'visible';
+
+  avatarEl.onerror = function() {
+    console.error('Avatar failed to load:', this.src);
+    this.style.visibility = 'hidden';
+    this.onerror = null; // prevent infinite loops if fallback also fails
+  };
+}
+
 // Multiple joke APIs to randomly pick from
 const jokeApis = [
   {
@@ -33,8 +126,8 @@ const jokeApis = [
           };
         }
       }
-      // If no split found, show whole joke as setup with a reveal
-      return { setup: joke, punchline: "😄" };
+      // If no split found, treat as one-liner (skip punchline step)
+      return { setup: joke, punchline: null, isOneLiner: true };
     }
   }
 ];
@@ -43,8 +136,13 @@ function getRandomApi() {
   return jokeApis[Math.floor(Math.random() * jokeApis.length)];
 }
 
+// Cache media query result to avoid creating new MediaQueryList on each call
+const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+
 /**
  * Creates a typewriter effect for the given text.
+ * Respects prefers-reduced-motion preference for accessibility.
+ * Uses aria-busy to prevent screen readers from announcing during animation.
  * @param {string} elementId - The ID of the element where the text will be displayed.
  * @param {string} text - The text to type out.
  * @param {number} speed - Speed of typing in milliseconds.
@@ -54,6 +152,26 @@ function typeWriterEffect(elementId, text, speed, callback) {
   const element = document.getElementById(elementId);
   if (!element) return;
 
+  const container = document.getElementById("joke-container");
+  const prefersReducedMotion = reducedMotionQuery.matches;
+
+  // If user prefers reduced motion, show text instantly for accessibility
+  if (prefersReducedMotion) {
+    element.textContent = text;
+    if (container) {
+      container.setAttribute("aria-busy", "false");
+    }
+    if (callback) {
+      callback();
+    }
+    return;
+  }
+
+  // Set aria-busy to prevent screen readers from announcing character-by-character
+  if (container) {
+    container.setAttribute("aria-busy", "true");
+  }
+
   element.textContent = "";
   let i = 0;
 
@@ -62,8 +180,14 @@ function typeWriterEffect(elementId, text, speed, callback) {
       element.textContent += text.charAt(i);
       i++;
       setTimeout(typeWriter, speed);
-    } else if (callback) {
-      callback();
+    } else {
+      // Animation complete - allow screen reader to announce
+      if (container) {
+        container.setAttribute("aria-busy", "false");
+      }
+      if (callback) {
+        callback();
+      }
     }
   }
 
@@ -74,6 +198,9 @@ function initializePopup() {
   document.getElementById("yes-button").addEventListener("click", initializeJoke);
   document.getElementById("no-button").addEventListener("click", closePopup);
   document.getElementById("close-popup").addEventListener("click", closePopup);
+
+  // Load cached joke immediately for instant display
+  loadCachedJoke();
 }
 
 function initializeJoke() {
@@ -84,6 +211,7 @@ function initializeJoke() {
   if (avatar) {
     avatar.src = "./images/thinking.png";
     avatar.className = "avatar";
+    handleAvatarError(avatar);
   }
 
   // Set "thinking" text
@@ -106,9 +234,11 @@ function initializeJoke() {
       .then(data => {
         currentJoke = api.parseJoke(data);
         console.log(`Joke fetched from ${api.name}`);
+        cacheJoke(currentJoke);
 
         if (avatar) {
           avatar.src = "./images/intro.png";
+          handleAvatarError(avatar);
         }
         typeWriterEffect("joke", currentJoke.setup, 50, showPunchlineButton);
       })
@@ -123,9 +253,11 @@ function initializeJoke() {
               currentJoke = data.jokes[randomIndex];
 
               console.log("Joke fetched from local JSON (fallback).");
+              cacheJoke(currentJoke);
 
               if (avatar) {
                 avatar.src = "./images/intro.png";
+                handleAvatarError(avatar);
               }
               typeWriterEffect("joke", currentJoke.setup, 50, showPunchlineButton);
             } else {
@@ -134,9 +266,31 @@ function initializeJoke() {
           })
           .catch(localError => {
             console.error("Local joke error:", localError);
-            typeWriterEffect("joke", "Oops! Could not fetch a joke.", 50);
-            if (avatar) {
-              avatar.src = "./images/intro.png";
+            // Try cached joke as final fallback
+            try {
+              chrome.storage.local.get('lastJoke', (result) => {
+                if (result.lastJoke && result.lastJoke.setup) {
+                  currentJoke = result.lastJoke;
+                  console.log("Using cached joke as offline fallback.");
+                  if (avatar) {
+                    avatar.src = "./images/intro.png";
+                    handleAvatarError(avatar);
+                  }
+                  typeWriterEffect("joke", currentJoke.setup, 50, showPunchlineButton);
+                } else {
+                  typeWriterEffect("joke", "Oops! Could not fetch a joke.", 50);
+                  if (avatar) {
+                    avatar.src = "./images/intro.png";
+                    handleAvatarError(avatar);
+                  }
+                }
+              });
+            } catch (cacheError) {
+              typeWriterEffect("joke", "Oops! Could not fetch a joke.", 50);
+              if (avatar) {
+                avatar.src = "./images/intro.png";
+                handleAvatarError(avatar);
+              }
             }
           });
       });
@@ -151,9 +305,28 @@ function showPunchlineButton() {
     return;
   }
 
+  // For one-liners, skip punchline step and go directly to "Get another joke"
+  if (currentJoke.isOneLiner) {
+    const avatar = document.querySelector(".avatar");
+    if (avatar) {
+      avatar.src = "./images/lol.png";
+      handleAvatarError(avatar);
+    }
+
+    buttonContainer.innerHTML = `
+      <button id="joke-again-button" class="button button-blue" aria-label="Get another joke">Get another joke!</button>
+    `;
+
+    const jokeAgainButton = document.getElementById("joke-again-button");
+    if (jokeAgainButton) {
+      jokeAgainButton.addEventListener("click", initializeJoke);
+    }
+    return;
+  }
+
   // Replace Yes/No buttons with the "See the punchline" button
   buttonContainer.innerHTML = `
-    <button id="joke-button" class="button button-green">See the punchline!</button>
+    <button id="joke-button" class="button button-green" aria-label="See the punchline of the joke">See the punchline!</button>
   `;
 
   // Add event listener to display the punchline
@@ -165,12 +338,20 @@ function showPunchlineButton() {
 
 function revealPunchline() {
   if (currentJoke.punchline) {
+    // Update cache to mark punchline as shown
+    try {
+      chrome.storage.local.set({ lastJoke: { ...currentJoke, punchlineShown: true } });
+    } catch (error) {
+      console.error('Failed to update punchlineShown in cache:', error);
+    }
+
     // Use typewriter effect for punchline
     typeWriterEffect("joke", currentJoke.punchline, 50, () => {
       // Update the avatar to the laughing image
       const avatar = document.querySelector(".avatar");
       if (avatar) {
         avatar.src = "./images/lol.png";
+        handleAvatarError(avatar);
       }
 
       // Change button to "Hear the joke again"
@@ -181,26 +362,15 @@ function revealPunchline() {
       }
 
       buttonContainer.innerHTML = `
-        <button id="joke-again-button" class="button button-blue">Hear the joke again!</button>
+        <button id="joke-again-button" class="button button-blue" aria-label="Get another joke">Get another joke!</button>
       `;
 
-      // Add event listener for the "Hear the joke again" button
+      // Add event listener for the "Get another joke" button
       const jokeAgainButton = document.getElementById("joke-again-button");
       if (jokeAgainButton) {
-        jokeAgainButton.addEventListener("click", hearJokeAgain);
+        jokeAgainButton.addEventListener("click", initializeJoke);
       }
     });
-  }
-}
-
-function hearJokeAgain() {
-  // Re-display the setup using the typewriter effect
-  typeWriterEffect("joke", currentJoke.setup, 50, showPunchlineButton);
-
-  // Update the avatar to the intro image
-  const avatar = document.querySelector(".avatar");
-  if (avatar) {
-    avatar.src = "./images/intro.png";
   }
 }
 

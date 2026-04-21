@@ -3,34 +3,36 @@
   <head>
     <title>Jokes By JC</title>
     <link rel="stylesheet" href="styles.css" />
-    <link rel="stylesheet" href="blog.css" />
+    <link rel="stylesheet" href="ad.css" />
   </head>
   <body>
     <div class="popup-container">
       <!-- Close button -->
-      <button id="close-popup" class="close-button">CLOSE</button>
+      <button id="close-popup" class="close-button" aria-label="Close extension popup">CLOSE</button>
 
       <!-- Joke and Avatar Section -->
       <div class="flex-container">
-        <div id="joke-container">
+        <div id="joke-container" aria-live="polite" role="status">
           <p id="joke">Hey, wanna hear a joke?</p>
         </div>
-        <img src="images/intro.png" alt="Avatar" class="avatar" />
+        <img src="images/intro.png" alt="JC mascot avatar" class="avatar" />
       </div>
 
       <!-- Button Section -->
       <div class="button-container">
-        <button id="yes-button" class="button button-blue">Yes</button>
-        <button id="no-button" class="button button-red">No</button>
+        <button id="yes-button" class="button button-blue" aria-label="Yes, tell me a joke">Yes</button>
+        <button id="no-button" class="button button-red" aria-label="No thanks, close popup">No</button>
       </div>
 
-      <!-- Blog Information Section -->
-      <div id="blog-container" class="blog-layout"></div>
-      <a target="_blank" href="https://www.byjc.dev/blogs/15-WinYourInternship" id="blog-bubble" class="chat-bubble bottom-bubble">
-        Check out my blog!!!
+      <!-- Company Ad Section -->
+      <a href="https://dfwsc.com" target="_blank" rel="noopener noreferrer" class="ad-container" aria-label="Visit dfwsc.com for custom software">
+        <img src="images/DFWSC-LOGO-CondensedJPG.jpg" alt="DFWSC Logo" class="ad-logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+        <span class="ad-fallback" style="display: none;">
+          <span class="ad-text">Need custom software?</span>
+          <span class="ad-link">dfwsc.com</span>
+        </span>
       </a>
     </div>
     <script src="popup.js"></script>
-    <script src="blog.js"></script>
   </body>
 </html>
