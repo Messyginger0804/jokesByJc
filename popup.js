@@ -2,6 +2,8 @@ document.addEventListener("DOMContentLoaded", initializePopup);
 
 let currentJoke = {};
 
+const BYJC_API = 'https://www.byjc.dev/api/jokes/random';
+
 /**
  * Loads the cached joke from chrome.storage.local and displays it immediately.
  * Shows "Get another joke" button since user has already seen this joke.
@@ -221,57 +223,46 @@ function initializeJoke() {
 
   // Wait for 2 seconds before trying to get a joke
   setTimeout(() => {
-    // Pick a random API
-    const api = getRandomApi();
-
-    fetch(api.url, { headers: api.headers })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error("API not available");
-        }
-        return response.json();
+    fetch(BYJC_API)
+      .then(async (response) => {
+        if (!response.ok) throw new Error('byjc API unavailable');
+        const data = await response.json();
+        if (!data || !data.setup) throw new Error('Invalid byjc API response');
+        return data;
       })
-      .then(data => {
-        currentJoke = api.parseJoke(data);
-        console.log(`Joke fetched from ${api.name}`);
+      .then((data) => {
+        currentJoke = data;
+        console.log('Joke fetched from byjc API');
         cacheJoke(currentJoke);
-
         if (avatar) {
           avatar.src = "./images/intro.png";
           handleAvatarError(avatar);
         }
         typeWriterEffect("joke", currentJoke.setup, 50, showPunchlineButton);
       })
-      .catch(apiError => {
-        console.error("API error:", apiError);
-        // Fallback to local jokes if API fails
-        fetch("./jokes.json")
-          .then(response => response.json())
-          .then(data => {
-            if (data.jokes && Array.isArray(data.jokes) && data.jokes.length > 0) {
-              const randomIndex = Math.floor(Math.random() * data.jokes.length);
-              currentJoke = data.jokes[randomIndex];
-
-              console.log("Joke fetched from local JSON (fallback).");
-              cacheJoke(currentJoke);
-
-              if (avatar) {
-                avatar.src = "./images/intro.png";
-                handleAvatarError(avatar);
-              }
-              typeWriterEffect("joke", currentJoke.setup, 50, showPunchlineButton);
-            } else {
-              throw new Error("No jokes found");
-            }
+      .catch(() => {
+        const api = getRandomApi();
+        fetch(api.url, { headers: api.headers })
+          .then((response) => {
+            if (!response.ok) throw new Error("API not available");
+            return response.json();
           })
-          .catch(localError => {
-            console.error("Local joke error:", localError);
-            // Try cached joke as final fallback
+          .then((data) => {
+            currentJoke = api.parseJoke(data);
+            console.log(`Joke fetched from ${api.name} (fallback)`);
+            cacheJoke(currentJoke);
+            if (avatar) {
+              avatar.src = "./images/intro.png";
+              handleAvatarError(avatar);
+            }
+            typeWriterEffect("joke", currentJoke.setup, 50, showPunchlineButton);
+          })
+          .catch(() => {
             try {
               chrome.storage.local.get('lastJoke', (result) => {
                 if (result.lastJoke && result.lastJoke.setup) {
                   currentJoke = result.lastJoke;
-                  console.log("Using cached joke as offline fallback.");
+                  console.log("Using cached joke as final fallback.");
                   if (avatar) {
                     avatar.src = "./images/intro.png";
                     handleAvatarError(avatar);
