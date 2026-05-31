@@ -1,192 +1,223 @@
+:root {
+    --bg-dark: #121212;
+    --bg-card: #1e1e1e;
+    --text-main: #e0e0e0;
+    --text-muted: #a0a0a0;
+    --accent-blue: #3b82f6;
+    --accent-blue-hover: #2563eb;
+    --accent-green: #10b981;
+    --accent-green-hover: #059669;
+    --accent-red: #ef4444;
+    --accent-red-hover: #dc2626;
+    --shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+    --border-radius-lg: 24px;
+    --border-radius-md: 16px;
+}
+
 /* Body */
 body {
     margin: 0;
-    padding: 0;
-    width: 500px;
+    padding: 10px;
+    width: 480px; /* Slightly narrower for better fit */
     height: auto;
-    overflow: hidden;
-    font-family: Arial, sans-serif;
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+}
+
+/* Header */
+.header {
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
     align-items: center;
-    background-color: rgba(40, 38, 38, 0.95);
-    border-radius: 50px;
+    margin-bottom: 20px;
+}
+
+.title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-main);
+    letter-spacing: -0.5px;
+}
+
+/* Content */
+.content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Footer */
+.footer {
+    margin-top: 24px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding-top: 12px;
 }
 
 /* Popup Container */
 .popup-container {
     position: relative;
     width: 100%;
-    min-height: 300px;
-    background-color: rgba(120, 113, 113, 0.9);
-    border-radius: 30px; /* Circular corners */
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-    padding: 20px;
+    min-height: 320px;
+    background-color: var(--bg-card);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow);
+    padding: 24px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    align-items: stretch;
-    overflow: hidden; /* Ensure no child content spills out */
+    box-sizing: border-box;
+    border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 /* Close Button */
 .close-button {
     position: absolute;
-    top: 10px;
-    right: 10px;
-    background-color: red;
-    color: white;
+    top: 16px;
+    right: 16px;
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-muted);
     border: none;
     border-radius: 50%;
-    padding: 10px;
-    font-size: 14px;
+    width: 32px;
+    height: 32px;
+    font-size: 10px;
+    font-weight: bold;
     cursor: pointer;
-    transition: background-color 0.3s ease, transform 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    z-index: 20;
 }
 
 .close-button:hover {
-    background-color: #b91c1c;
-    transform: scale(1.1);
+    background: var(--accent-red);
+    color: white;
+    transform: rotate(90deg);
 }
 
 /* Flex Container for Joke and Avatar */
 .flex-container {
     display: flex;
-    align-items: center;
+    align-items: flex-end; /* Align avatar to bottom of joke */
     justify-content: space-between;
-    gap: 16px;
-    padding: 20px 0;
-}
-
-/* Avatar Image */
-.avatar {
-    width: 120px; /* Increased size */
-    height: 120px; /* Increased size */
-    margin-top: 5rem;
-    border-radius: 50%;
-    transform: scaleX(-1); /* Flip the image */
-    position: absolute; /* Make it absolutely positioned */
-    top: 20px; /* Adjust vertical position */
-    right: 20px; /* Adjust horizontal position */
+    gap: 20px;
+    padding: 10px 0 20px 0;
+    position: relative;
 }
 
 /* Joke Container */
 #joke-container {
     flex: 1;
-    background-color: #f3f4f6;
+    background-color: #2a2a2a;
     padding: 20px;
-    border-radius: 30px;
+    border-radius: 20px 20px 4px 20px; /* Speech bubble look */
     font-size: 18px;
-    line-height: 1.6;
-    color: #111827;
-    text-align: center;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    margin-right: 40px;
+    line-height: 1.5;
+    color: #ffffff;
+    text-align: left;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* Green Button */
-.button-green {
-    background-color: #16a34a; /* Green */
-    color: white; /* White text */
-    font-weight: bold;
-    transition: background-color 0.3s ease, transform 0.2s ease;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Optional shadow */
+/* Speech bubble pointer */
+#joke-container::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    right: -10px;
+    width: 0;
+    height: 0;
+    border-left: 10px solid #2a2a2a;
+    border-top: 10px solid transparent;
 }
 
-.button-green:hover {
-    background-color: #15803d; /* Darker green on hover */
-    transform: scale(1.1); /* Slight enlargement on hover */
+/* Avatar Image */
+.avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    transform: scaleX(-1);
+    object-fit: contain;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 5px;
+    flex-shrink: 0;
 }
 
 /* Button Container */
 .button-container {
-    margin-top: 20px;
     display: flex;
     justify-content: center;
-    gap: 16px;
+    gap: 12px;
+    margin-top: 8px;
 }
 
 /* General Button Styles */
 .button {
     flex: 1;
-    max-width: 120px;
-    padding: 12px;
-    border-radius: 15px; /* Rounded edges for buttons */
+    padding: 12px 20px;
+    border-radius: var(--border-radius-md);
     cursor: pointer;
     border: none;
-    font-size: 16px;
-    font-weight: bold;
+    font-size: 15px;
+    font-weight: 600;
     color: white;
-    transition: transform 0.2s ease, box-shadow 0.3s ease;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .button:hover {
-    transform: scale(1.1);
-    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+}
+
+.button:active {
+    transform: translateY(0);
 }
 
 /* Blue Button */
 .button-blue {
-    background-color: #3b82f6;
+    background-color: var(--accent-blue);
 }
 
 .button-blue:hover {
-    background-color: #2563eb;
+    background-color: var(--accent-blue-hover);
 }
 
 /* Red Button */
 .button-red {
-    background-color: #f87171;
+    background-color: var(--accent-red);
 }
 
 .button-red:hover {
-    background-color: #ef4444;
+    background-color: var(--accent-red-hover);
 }
 
-/* General Chat Bubble Styles */
-.chat-bubble {
-    background-color: #f3f4f6; /* Light gray background */
-    color: #111827; /* Dark text */
-    border-radius: 20px;
-    padding: 10px 20px;
-    font-size: 16px;
-    font-weight: bold;
-    text-align: center;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 80%;
-  }
-
-/* Bottom Chat Bubble */
-.bottom-bubble {
-    margin-left: 25%;
-    bottom: 20px;
-    background-color: whitesmoke;
-    color: black;
-    width: fit-content;
-    padding: 10px 20px;
-    font-weight: bold;
-    border-radius: 20px;
-    text-align: center;
-    letter-spacing: 0.05em;      /* Added tracking/letter spacing */
-    position: absolute;
-    font-size: 10px;
-    left: 50%;
-    transform: translateX(-50%);
-    animation: growAndPop 2s ease-in-out infinite; /* Add animation */
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2); /* Optional shadow */
-    z-index: 10;
+/* Green Button */
+.button-green {
+    background-color: var(--accent-green);
 }
 
-/* Animation Keyframes */
-@keyframes growAndPop {
-    0%, 100% {
-        transform: translateX(-50%) scale(1); /* Default size */
-    }
-    50% {
-        transform: translateX(-50%) scale(1.2); /* Grow effect */
-    }
+.button-green:hover {
+    background-color: var(--accent-green-hover);
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+#joke {
+    margin: 0;
+    animation: fadeIn 0.4s ease-out;
+}
+
+#joke-container[aria-busy="true"] #joke {
+    color: var(--text-muted);
+    font-style: italic;
+    opacity: 0.8;
 }

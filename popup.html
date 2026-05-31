@@ -7,31 +7,45 @@
   </head>
   <body>
     <div class="popup-container">
-      <!-- Close button -->
-      <button id="close-popup" class="close-button" aria-label="Close extension popup">CLOSE</button>
+      <header class="header">
+        <h1 class="title">Jokes By JC</h1>
+        <button id="close-popup" class="close-button" aria-label="Close extension popup">×</button>
+      </header>
 
-      <!-- Joke and Avatar Section -->
-      <div class="flex-container">
-        <div id="joke-container" aria-live="polite" role="status">
-          <p id="joke">Hey, wanna hear a joke?</p>
+      <main class="content">
+        <!-- Joke and Avatar Section -->
+        <div class="flex-container">
+          <div id="joke-container" aria-live="polite" role="status">
+            <p id="joke">Hey, wanna hear a joke?</p>
+          </div>
+          <img src="images/intro.png" alt="JC mascot avatar" class="avatar" />
         </div>
-        <img src="images/intro.png" alt="JC mascot avatar" class="avatar" />
-      </div>
 
-      <!-- Button Section -->
-      <div class="button-container">
-        <button id="yes-button" class="button button-blue" aria-label="Yes, tell me a joke">Yes</button>
-        <button id="no-button" class="button button-red" aria-label="No thanks, close popup">No</button>
-      </div>
+        <!-- Button Section -->
+        <div class="button-container">
+          <button id="yes-button" class="button button-blue" aria-label="Yes, tell me a joke">Yes</button>
+          <button id="no-button" class="button button-red" aria-label="No thanks, close popup">No</button>
+        </div>
+      </main>
 
-      <!-- Company Ad Section -->
-      <a href="https://dfwsc.com" target="_blank" rel="noopener noreferrer" class="ad-container" aria-label="Visit dfwsc.com for custom software">
-        <img src="images/DFWSC-LOGO-CondensedJPG.jpg" alt="DFWSC Logo" class="ad-logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
-        <span class="ad-fallback" style="display: none;">
-          <span class="ad-text">Need custom software?</span>
-          <span class="ad-link">dfwsc.com</span>
-        </span>
-      </a>
+      <footer class="footer">
+        <!-- Company Ad Section -->
+        <a href="https://dfwsc.com" target="_blank" rel="noopener noreferrer" class="ad-container" aria-label="Visit dfwsc.com for custom software">
+          <img src="images/DFWSC-LOGO-CondensedJPG.jpg" alt="DFWSC Logo" class="ad-logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+          <span class="ad-fallback" style="display: none;">
+            <span class="ad-text">Need custom software?</span>
+            <span class="ad-link">dfwsc.com</span>
+          </span>
+        </a>
+
+        <!-- Personal Blog Ad Section -->
+        <a href="https://www.byjc.dev" target="_blank" rel="noopener noreferrer" class="ad-container" aria-label="Visit JC's blog">
+          <span class="ad-fallback" style="display: flex;">
+            <span class="ad-text">My blog</span>
+            <span class="ad-link">www.byjc.dev</span>
+          </span>
+        </a>
+      </footer>
     </div>
     <script src="popup.js"></script>
   </body>
