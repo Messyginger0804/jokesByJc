@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Jokes By JC",
   "description": "A fun extension where a character tells a joke.",
-  "version": "3.0",
+  "version": "4.0",
   "permissions": ["alarms", "storage"],
   "host_permissions": ["https://www.byjc.dev/"],
   "background": {
