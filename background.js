@@ -5,9 +5,9 @@
 // check runs shortly after the browser starts, so short browsing sessions still
 // get their daily joke.
 
-const ALARM_NAME = "dailyPopup";
-const STARTUP_ALARM_NAME = "dailyPopupStartup";
-const CHECK_PERIOD_MINUTES = 60;
+export const ALARM_NAME = "dailyPopup";
+export const STARTUP_ALARM_NAME = "dailyPopupStartup";
+export const CHECK_PERIOD_MINUTES = 60;
 const STARTUP_DELAY_MINUTES = 1;
 
 const POPUP_WIDTH = 500;
@@ -29,7 +29,7 @@ chrome.alarms.onAlarm.addListener((alarm) => {
   }
 });
 
-async function ensureDailyAlarm() {
+export async function ensureDailyAlarm() {
   const existing = await chrome.alarms.get(ALARM_NAME);
   if (existing && existing.periodInMinutes === CHECK_PERIOD_MINUTES) return;
   // Missing, or left over from an older version with a different schedule.
@@ -42,14 +42,14 @@ async function ensureDailyAlarm() {
 // Serializes checks so two alarms firing together can't open two windows.
 let pendingCheck = Promise.resolve();
 
-function checkAndShowPopup() {
+export function checkAndShowPopup() {
   pendingCheck = pendingCheck.then(showPopupIfOwed).catch((error) => {
     console.error("Daily popup check failed:", error);
   });
   return pendingCheck;
 }
 
-async function showPopupIfOwed() {
+export async function showPopupIfOwed() {
   const today = new Date().toDateString();
   const { lastPopupDate } = await chrome.storage.local.get("lastPopupDate");
   if (lastPopupDate === today) return;

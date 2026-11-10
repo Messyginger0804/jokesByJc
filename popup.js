@@ -1,7 +1,6 @@
 import { playState, buttonIn } from "./motion.js";
+import { fetchJoke, normalizeJoke } from "./jokes.js";
 
-const BYJC_API = "https://www.byjc.dev/api/jokes/random";
-const FETCH_TIMEOUT_MS = 5000;
 const MIN_THINKING_MS = 2000;
 const TYPE_SPEED_MS = 50;
 
@@ -11,110 +10,7 @@ let requestId = 0;
 // Handle of the active typewriter timer, so a new animation cancels the old one.
 let typingTimer = null;
 
-// Fallback joke APIs, tried in random order if the byjc API fails.
-const fallbackApis = [
-  {
-    name: "Official Joke API",
-    url: "https://official-joke-api.appspot.com/random_joke",
-    headers: {},
-    parseJoke: (data) => ({ setup: data.setup, punchline: data.punchline })
-  },
-  {
-    name: "JokeAPI",
-    url: "https://v2.jokeapi.dev/joke/Pun,Misc?type=twopart&safe-mode",
-    headers: {},
-    parseJoke: (data) => ({ setup: data.setup, punchline: data.delivery })
-  },
-  {
-    name: "icanhazdadjoke",
-    url: "https://icanhazdadjoke.com/",
-    headers: { Accept: "application/json" },
-    parseJoke: (data) => splitOneLiner(data.joke)
-  }
-];
-
-const byjcApi = {
-  name: "byjc API",
-  url: BYJC_API,
-  headers: {},
-  parseJoke: (data) => ({ setup: data.setup, punchline: data.punchline, isOneLiner: data.isOneLiner })
-};
-
-/**
- * Splits a single-line joke into setup/punchline at a natural break, or marks it as a one-liner.
- */
-function splitOneLiner(joke) {
-  if (typeof joke !== "string") return null;
-  const splitPatterns = [" - ", "? ", "! "];
-  for (const pattern of splitPatterns) {
-    const index = joke.indexOf(pattern);
-    if (index > 0 && index < joke.length - 5) {
-      return {
-        setup: joke.substring(0, index + pattern.trim().length),
-        punchline: joke.substring(index + pattern.length)
-      };
-    }
-  }
-  return { setup: joke, punchline: null, isOneLiner: true };
-}
-
-/**
- * Validates and normalizes a parsed joke. Returns null if it is unusable.
- */
-function normalizeJoke(joke) {
-  if (!joke || typeof joke.setup !== "string" || !joke.setup.trim()) return null;
-  const punchline = typeof joke.punchline === "string" && joke.punchline.trim() ? joke.punchline.trim() : null;
-  return {
-    setup: joke.setup.trim(),
-    punchline,
-    isOneLiner: !punchline
-  };
-}
-
-function shuffle(list) {
-  const copy = [...list];
-  for (let i = copy.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [copy[i], copy[j]] = [copy[j], copy[i]];
-  }
-  return copy;
-}
-
-async function fetchJokeFrom(api) {
-  const response = await fetch(api.url, {
-    headers: api.headers,
-    cache: "no-store",
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS)
-  });
-  if (!response.ok) throw new Error(`${api.name} returned HTTP ${response.status}`);
-  const joke = normalizeJoke(api.parseJoke(await response.json()));
-  if (!joke) throw new Error(`${api.name} returned an invalid joke`);
-  return joke;
-}
-
-/**
- * Tries the byjc API first, then every fallback API in random order.
- * Resolves with a joke, or null if every source failed.
- */
-async function fetchJoke(previousSetup) {
-  for (const api of [byjcApi, ...shuffle(fallbackApis)]) {
-    try {
-      const joke = await fetchJokeFrom(api);
-      // "Get another joke" should not repeat the joke that is already on screen.
-      if (previousSetup && joke.setup === previousSetup) {
-        console.warn(`Joke source repeated the current joke (${api.name})`);
-        continue;
-      }
-      console.log(`Joke fetched from ${api.name}`);
-      return joke;
-    } catch (error) {
-      console.warn(`Joke source failed (${api.name}):`, error.message);
-    }
-  }
-  return null;
-}
-
-function storageGet(key) {
+export function storageGet(key) {
   return new Promise((resolve) => {
     try {
       chrome.storage.local.get(key, (result) => {
@@ -132,7 +28,7 @@ function storageGet(key) {
   });
 }
 
-function storageSet(items) {
+export function storageSet(items) {
   try {
     chrome.storage.local.set(items, () => {
       if (chrome.runtime.lastError) {
@@ -147,7 +43,7 @@ function storageSet(items) {
 /**
  * Saves the joke so it can be shown instantly when the popup is reopened.
  */
-function cacheJoke(joke, punchlineShown = false) {
+export function cacheJoke(joke, punchlineShown = false) {
   if (!joke || !joke.setup) return;
   storageSet({
     lastJoke: {
@@ -163,7 +59,7 @@ function cacheJoke(joke, punchlineShown = false) {
 /**
  * Restores the cached joke on popup open, unless the user has already asked for a new one.
  */
-async function loadCachedJoke() {
+export async function loadCachedJoke() {
   const startedAt = requestId;
   const { lastJoke } = await storageGet("lastJoke");
   if (startedAt !== requestId) return;
@@ -206,7 +102,7 @@ const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)")
  * @param {string} text - The text to type out.
  * @param {function} [callback] - Called once typing finishes (not called if cancelled).
  */
-function typeWriterEffect(text, callback) {
+export function typeWriterEffect(text, callback) {
   cancelTyping();
   const element = document.getElementById("joke");
   const container = document.getElementById("joke-container");
@@ -297,7 +193,7 @@ function showRetryButton() {
   });
 }
 
-function initializePopup() {
+export function initializePopup() {
   // Avatar image error handling lives in motion.js with the avatar poses.
   playState("intro");
 
@@ -322,7 +218,7 @@ function initializePopup() {
   loadCachedJoke();
 }
 
-async function initializeJoke() {
+export async function initializeJoke() {
   const myRequest = ++requestId;
   setActionButtonsDisabled(true);
   playState(currentJoke ? "again" : "thinking");
@@ -340,7 +236,6 @@ async function initializeJoke() {
     const { lastJoke } = await storageGet("lastJoke");
     if (myRequest !== requestId) return;
     joke = normalizeJoke(lastJoke);
-    if (joke) console.log("Using cached joke as final fallback.");
   }
 
   if (!joke) {
@@ -366,7 +261,7 @@ async function initializeJoke() {
   });
 }
 
-function revealPunchline() {
+export function revealPunchline() {
   const joke = currentJoke;
   const myRequest = requestId;
   setActionButtonsDisabled(true);

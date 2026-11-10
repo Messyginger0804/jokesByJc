@@ -11,6 +11,7 @@ zip -r -X "$OUT" \
   background.js \
   popup.html \
   popup.js \
+  jokes.js \
   motion.js \
   vendor/motion-mini.js \
   vendor/confetti.js \
