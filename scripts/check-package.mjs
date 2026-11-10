@@ -57,6 +57,8 @@ for (const ref of referenced) if (!existsSync(join(UNPACKED, ref))) fail(`refere
 
 if (failures.length) {
   console.error(`Package check failed:\n  ${failures.join("\n  ")}`);
+  // Never leave a bad build behind for EXT_DIR=dist/unpacked to pick up.
+  rmSync("dist", { recursive: true, force: true });
   process.exit(1);
 }
 console.log(`Package OK: ${entries.length} files, version ${packagedManifest.version}, unpacked to ${UNPACKED}`);
