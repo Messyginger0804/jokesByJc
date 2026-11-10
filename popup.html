@@ -1,6 +1,7 @@
 <!DOCTYPE html>
-<html>
+<html lang="en" class="pre-intro">
   <head>
+    <meta charset="utf-8" />
     <title>Jokes By JC</title>
     <link rel="stylesheet" href="styles.css" />
     <link rel="stylesheet" href="ad.css" />
@@ -9,30 +10,46 @@
     <div class="popup-container">
       <header class="header">
         <h1 class="title">Jokes By JC</h1>
-        <button id="close-popup" class="close-button" aria-label="Close extension popup">×</button>
+        <button type="button" id="close-popup" class="close-button" aria-label="Close extension popup">×</button>
       </header>
 
       <main class="content">
         <!-- Joke and Avatar Section -->
-        <div class="flex-container">
+        <div class="flex-container stage">
           <div id="joke-container" aria-live="polite" role="status">
             <p id="joke">Hey, wanna hear a joke?</p>
           </div>
-          <img src="images/intro.png" alt="JC mascot avatar" class="avatar" />
+          <div class="avatar-stage" role="img" aria-label="JC mascot avatar">
+            <div class="avatar-breathe">
+              <div class="avatar-body">
+                <div class="avatar-flip">
+                  <img class="pose" data-pose="intro" src="images/intro.png" alt="" />
+                  <img class="pose" data-pose="thinking" src="images/thinking.png" alt="" />
+                  <img class="pose" data-pose="lol" src="images/lol.png" alt="" />
+                  <img class="pose" data-pose="coolguy" src="images/coolguy.png" alt="" />
+                  <!-- Mirrored back, so JC points toward the speech bubble. -->
+                  <img class="pose pose-unflip" data-pose="pointing" src="images/pointing.png" alt="" />
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Button Section -->
         <div class="button-container">
-          <button id="yes-button" class="button button-blue" aria-label="Yes, tell me a joke">Yes</button>
-          <button id="no-button" class="button button-red" aria-label="No thanks, close popup">No</button>
+          <button type="button" id="yes-button" class="button button-blue" aria-label="Yes, tell me a joke">Yes</button>
+          <button type="button" id="no-button" class="button button-secondary" aria-label="No thanks, close popup">No</button>
         </div>
       </main>
 
       <footer class="footer">
         <!-- Company Ad Section -->
-        <a href="https://dfwsc.com" target="_blank" rel="noopener noreferrer" class="ad-container" aria-label="Visit dfwsc.com for custom software">
-          <img src="images/DFWSC-LOGO-CondensedJPG.jpg" alt="DFWSC Logo" class="ad-logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
-          <span class="ad-fallback" style="display: none;">
+        <a href="https://dfwsc.com" target="_blank" rel="noopener noreferrer" class="ad-container ad-logo-tile" aria-label="Visit dfwsc.com for custom software">
+          <span class="ad-lockup">
+            <img src="images/dfwsc-mark.svg" alt="" class="ad-logo" />
+            <span class="ad-wordmark" aria-hidden="true">Software<br />Consulting</span>
+          </span>
+          <span class="ad-fallback" hidden>
             <span class="ad-text">Need custom software?</span>
             <span class="ad-link">dfwsc.com</span>
           </span>
@@ -40,13 +57,13 @@
 
         <!-- Personal Blog Ad Section -->
         <a href="https://www.byjc.dev" target="_blank" rel="noopener noreferrer" class="ad-container" aria-label="Visit JC's blog">
-          <span class="ad-fallback" style="display: flex;">
+          <span class="ad-fallback">
             <span class="ad-text">My blog</span>
             <span class="ad-link">www.byjc.dev</span>
           </span>
         </a>
       </footer>
     </div>
-    <script src="popup.js"></script>
+    <script type="module" src="popup.js"></script>
   </body>
 </html>

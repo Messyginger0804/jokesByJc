@@ -1,105 +1,18 @@
-document.addEventListener("DOMContentLoaded", initializePopup);
+import { playState, buttonIn } from "./motion.js";
 
-let currentJoke = {};
-let jokeTimeout = null;
+const BYJC_API = "https://www.byjc.dev/api/jokes/random";
+const FETCH_TIMEOUT_MS = 5000;
+const MIN_THINKING_MS = 2000;
+const TYPE_SPEED_MS = 50;
 
-const BYJC_API = 'https://www.byjc.dev/api/jokes/random';
+let currentJoke = null;
+// Incremented on every new joke request; async work from an older request is ignored.
+let requestId = 0;
+// Handle of the active typewriter timer, so a new animation cancels the old one.
+let typingTimer = null;
 
-/**
- * Loads the cached joke from chrome.storage.local and displays it immediately.
- * Shows "Get another joke" button since user has already seen this joke.
- */
-function loadCachedJoke() {
-  try {
-    chrome.storage.local.get('lastJoke', (result) => {
-      if (result.lastJoke && result.lastJoke.setup) {
-        currentJoke = result.lastJoke;
-        const jokeElement = document.getElementById("joke");
-        const buttonContainer = document.querySelector(".button-container");
-
-        if (jokeElement) {
-          jokeElement.textContent = currentJoke.setup;
-        }
-
-        if (buttonContainer) {
-          // Check if punchline exists and hasn't been shown yet
-          // Treat undefined punchlineShown as true (shown) for backward compatibility
-          const hasPunchline = currentJoke.punchline && !currentJoke.isOneLiner;
-          const punchlineNotShown = currentJoke.punchlineShown === false;
-
-          if (hasPunchline && punchlineNotShown) {
-            // Show "See the punchline!" button for unrevealed two-part jokes
-            buttonContainer.innerHTML = `
-              <button id="joke-button" class="button button-green" aria-label="See the punchline of the joke">See the punchline!</button>
-            `;
-            const jokeButton = document.getElementById("joke-button");
-            if (jokeButton) {
-              jokeButton.addEventListener("click", revealPunchline);
-            }
-          } else {
-            // Show "Get another joke!" for one-liners or already-revealed jokes
-            buttonContainer.innerHTML = `
-              <button id="joke-again-button" class="button button-blue" aria-label="Get another joke">Get another joke!</button>
-            `;
-            const jokeAgainButton = document.getElementById("joke-again-button");
-            if (jokeAgainButton) {
-              jokeAgainButton.addEventListener("click", initializeJoke);
-            }
-          }
-        }
-      }
-    });
-  } catch (error) {
-    console.error('Failed to load cached joke:', error);
-  }
-}
-
-/**
- * Saves the current joke to chrome.storage.local for instant display on popup reopen.
- * @param {Object} joke - The joke object with setup, punchline, and optional isOneLiner flag.
- */
-function cacheJoke(joke) {
-  if (!joke || !joke.setup) return;
-
-  const cacheData = {
-    setup: joke.setup,
-    punchline: joke.punchline || null,
-    isOneLiner: joke.isOneLiner || false,
-    punchlineShown: false,
-    timestamp: Date.now()
-  };
-
-  try {
-    chrome.storage.local.set({ lastJoke: cacheData });
-  } catch (error) {
-    console.error('Failed to cache joke:', error);
-  }
-}
-
-/**
- * Attaches an onerror handler to the avatar element to gracefully handle image load failures.
- * Hides the avatar if the image fails to load to prevent broken image icons.
- * Uses a flag to prevent multiple handler attachments and memory leaks.
- * @param {HTMLImageElement} avatarEl - The avatar image element.
- */
-function handleAvatarError(avatarEl) {
-  if (!avatarEl) return;
-
-  // Clear any existing handler first to prevent orphaned closures
-  avatarEl.onerror = null;
-
-  // Reset visibility in case it was hidden from a previous error
-  avatarEl.style.visibility = 'visible';
-
-  avatarEl.onerror = function() {
-    console.error('Avatar failed to load:', this.src);
-    this.style.visibility = 'hidden';
-    this.onerror = null; // prevent infinite loops if fallback also fails
-  };
-}
-
-// Multiple joke APIs to randomly pick from
-const jokeApis = [
+// Fallback joke APIs, tried in random order if the byjc API fails.
+const fallbackApis = [
   {
     name: "Official Joke API",
     url: "https://official-joke-api.appspot.com/random_joke",
@@ -115,292 +28,373 @@ const jokeApis = [
   {
     name: "icanhazdadjoke",
     url: "https://icanhazdadjoke.com/",
-    headers: { "Accept": "application/json" },
-    parseJoke: (data) => {
-      // Single-line joke - split at common patterns or show as one-liner
-      const joke = data.joke;
-      const splitPatterns = [" - ", "? ", "! "];
-      for (const pattern of splitPatterns) {
-        const index = joke.indexOf(pattern);
-        if (index > 0 && index < joke.length - 5) {
-          return {
-            setup: joke.substring(0, index + pattern.trim().length),
-            punchline: joke.substring(index + pattern.length)
-          };
-        }
-      }
-      // If no split found, treat as one-liner (skip punchline step)
-      return { setup: joke, punchline: null, isOneLiner: true };
-    }
+    headers: { Accept: "application/json" },
+    parseJoke: (data) => splitOneLiner(data.joke)
   }
 ];
 
-function getRandomApi() {
-  return jokeApis[Math.floor(Math.random() * jokeApis.length)];
+const byjcApi = {
+  name: "byjc API",
+  url: BYJC_API,
+  headers: {},
+  parseJoke: (data) => ({ setup: data.setup, punchline: data.punchline, isOneLiner: data.isOneLiner })
+};
+
+/**
+ * Splits a single-line joke into setup/punchline at a natural break, or marks it as a one-liner.
+ */
+function splitOneLiner(joke) {
+  if (typeof joke !== "string") return null;
+  const splitPatterns = [" - ", "? ", "! "];
+  for (const pattern of splitPatterns) {
+    const index = joke.indexOf(pattern);
+    if (index > 0 && index < joke.length - 5) {
+      return {
+        setup: joke.substring(0, index + pattern.trim().length),
+        punchline: joke.substring(index + pattern.length)
+      };
+    }
+  }
+  return { setup: joke, punchline: null, isOneLiner: true };
+}
+
+/**
+ * Validates and normalizes a parsed joke. Returns null if it is unusable.
+ */
+function normalizeJoke(joke) {
+  if (!joke || typeof joke.setup !== "string" || !joke.setup.trim()) return null;
+  const punchline = typeof joke.punchline === "string" && joke.punchline.trim() ? joke.punchline.trim() : null;
+  return {
+    setup: joke.setup.trim(),
+    punchline,
+    isOneLiner: !punchline
+  };
+}
+
+function shuffle(list) {
+  const copy = [...list];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+async function fetchJokeFrom(api) {
+  const response = await fetch(api.url, {
+    headers: api.headers,
+    cache: "no-store",
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS)
+  });
+  if (!response.ok) throw new Error(`${api.name} returned HTTP ${response.status}`);
+  const joke = normalizeJoke(api.parseJoke(await response.json()));
+  if (!joke) throw new Error(`${api.name} returned an invalid joke`);
+  return joke;
+}
+
+/**
+ * Tries the byjc API first, then every fallback API in random order.
+ * Resolves with a joke, or null if every source failed.
+ */
+async function fetchJoke(previousSetup) {
+  for (const api of [byjcApi, ...shuffle(fallbackApis)]) {
+    try {
+      const joke = await fetchJokeFrom(api);
+      // "Get another joke" should not repeat the joke that is already on screen.
+      if (previousSetup && joke.setup === previousSetup) {
+        console.warn(`Joke source repeated the current joke (${api.name})`);
+        continue;
+      }
+      console.log(`Joke fetched from ${api.name}`);
+      return joke;
+    } catch (error) {
+      console.warn(`Joke source failed (${api.name}):`, error.message);
+    }
+  }
+  return null;
+}
+
+function storageGet(key) {
+  return new Promise((resolve) => {
+    try {
+      chrome.storage.local.get(key, (result) => {
+        if (chrome.runtime.lastError) {
+          console.error("Storage read failed:", chrome.runtime.lastError.message);
+          resolve({});
+        } else {
+          resolve(result || {});
+        }
+      });
+    } catch (error) {
+      console.error("Storage read failed:", error);
+      resolve({});
+    }
+  });
+}
+
+function storageSet(items) {
+  try {
+    chrome.storage.local.set(items, () => {
+      if (chrome.runtime.lastError) {
+        console.error("Storage write failed:", chrome.runtime.lastError.message);
+      }
+    });
+  } catch (error) {
+    console.error("Storage write failed:", error);
+  }
+}
+
+/**
+ * Saves the joke so it can be shown instantly when the popup is reopened.
+ */
+function cacheJoke(joke, punchlineShown = false) {
+  if (!joke || !joke.setup) return;
+  storageSet({
+    lastJoke: {
+      setup: joke.setup,
+      punchline: joke.punchline || null,
+      isOneLiner: !!joke.isOneLiner,
+      punchlineShown,
+      timestamp: Date.now()
+    }
+  });
+}
+
+/**
+ * Restores the cached joke on popup open, unless the user has already asked for a new one.
+ */
+async function loadCachedJoke() {
+  const startedAt = requestId;
+  const { lastJoke } = await storageGet("lastJoke");
+  if (startedAt !== requestId) return;
+  const joke = normalizeJoke(lastJoke);
+  if (!joke) return;
+
+  currentJoke = joke;
+  setJokeText(joke.setup);
+  // Undefined punchlineShown (older cache format) is treated as already shown.
+  if (!joke.isOneLiner && lastJoke.punchlineShown === false) {
+    playState("restore", { pose: "pointing" });
+    showPunchlineButton({ focus: false });
+  } else {
+    playState("restore", { pose: "coolguy" });
+    showAnotherJokeButton({ focus: false });
+  }
+}
+
+function cancelTyping() {
+  if (typingTimer) {
+    clearTimeout(typingTimer);
+    typingTimer = null;
+  }
+}
+
+function setJokeText(text) {
+  cancelTyping();
+  const element = document.getElementById("joke");
+  const container = document.getElementById("joke-container");
+  if (element) element.textContent = text;
+  if (container) container.setAttribute("aria-busy", "false");
 }
 
 // Cache media query result to avoid creating new MediaQueryList on each call
 const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
 
 /**
- * Creates a typewriter effect for the given text.
- * Respects prefers-reduced-motion preference for accessibility.
- * Uses aria-busy to prevent screen readers from announcing during animation.
- * @param {string} elementId - The ID of the element where the text will be displayed.
+ * Types text into the joke element. Starting a new animation cancels any running one.
+ * Respects prefers-reduced-motion and sets aria-busy so screen readers announce only the final text.
  * @param {string} text - The text to type out.
- * @param {number} speed - Speed of typing in milliseconds.
- * @param {function} [callback] - Optional callback to execute after typing finishes.
+ * @param {function} [callback] - Called once typing finishes (not called if cancelled).
  */
-function typeWriterEffect(elementId, text, speed, callback) {
-  const element = document.getElementById(elementId);
+function typeWriterEffect(text, callback) {
+  cancelTyping();
+  const element = document.getElementById("joke");
+  const container = document.getElementById("joke-container");
   if (!element) return;
 
-  const container = document.getElementById("joke-container");
-  const prefersReducedMotion = reducedMotionQuery.matches;
-
-  // If user prefers reduced motion, show text instantly for accessibility
-  if (prefersReducedMotion) {
-    element.textContent = text;
-    if (container) {
-      container.setAttribute("aria-busy", "false");
-    }
-    if (callback) {
-      callback();
-    }
+  if (reducedMotionQuery.matches) {
+    setJokeText(text);
+    if (callback) callback();
     return;
   }
 
-  // Set aria-busy to prevent screen readers from announcing character-by-character
-  if (container) {
-    container.setAttribute("aria-busy", "true");
-  }
-
+  if (container) container.setAttribute("aria-busy", "true");
   element.textContent = "";
   let i = 0;
 
-  function typeWriter() {
+  function typeNext() {
     if (i < text.length) {
       element.textContent += text.charAt(i);
       i++;
-      setTimeout(typeWriter, speed);
+      typingTimer = setTimeout(typeNext, TYPE_SPEED_MS);
     } else {
-      // Animation complete - allow screen reader to announce
-      if (container) {
-        container.setAttribute("aria-busy", "false");
-      }
-      if (callback) {
-        callback();
-      }
+      typingTimer = null;
+      if (container) container.setAttribute("aria-busy", "false");
+      if (callback) callback();
     }
   }
 
-  typeWriter();
+  typeNext();
 }
 
-function initializePopup() {
-  document.getElementById("yes-button").addEventListener("click", initializeJoke);
-  document.getElementById("no-button").addEventListener("click", closePopup);
-  document.getElementById("close-popup").addEventListener("click", closePopup);
-
-  // Load cached joke immediately for instant display
-  loadCachedJoke();
-}
-
-function initializeJoke() {
-  // Clear any pending joke fetch from a previous click
-  if (jokeTimeout) {
-    clearTimeout(jokeTimeout);
-    jokeTimeout = null;
-  }
-
-  // Set the avatar to the "thinking" image while loading
-  const avatar = document.querySelector(".avatar");
-  const jokeElement = document.getElementById("joke");
-
-  if (avatar) {
-    avatar.src = "./images/thinking.png";
-    avatar.className = "avatar";
-    handleAvatarError(avatar);
-  }
-
-  // Set "thinking" text
-  if (jokeElement) {
-    typeWriterEffect("joke", "Thinking of a good one...", 50);
-  }
-
-  // Wait for 2 seconds before trying to get a joke
-  jokeTimeout = setTimeout(() => {
-    jokeTimeout = null;
-    fetch(BYJC_API)
-      .then(async (response) => {
-        if (!response.ok) throw new Error('byjc API unavailable');
-        const data = await response.json();
-        if (!data || !data.setup) throw new Error('Invalid byjc API response');
-        return data;
-      })
-      .then((data) => {
-        currentJoke = data;
-        console.log('Joke fetched from byjc API');
-        cacheJoke(currentJoke);
-        if (avatar) {
-          avatar.src = "./images/intro.png";
-          handleAvatarError(avatar);
-        }
-        typeWriterEffect("joke", currentJoke.setup, 50, showPunchlineButton);
-      })
-      .catch(() => {
-        const api = getRandomApi();
-        fetch(api.url, { headers: api.headers })
-          .then((response) => {
-            if (!response.ok) throw new Error("API not available");
-            return response.json();
-          })
-          .then((data) => {
-            currentJoke = api.parseJoke(data);
-            console.log(`Joke fetched from ${api.name} (fallback)`);
-            cacheJoke(currentJoke);
-            if (avatar) {
-              avatar.src = "./images/intro.png";
-              handleAvatarError(avatar);
-            }
-            typeWriterEffect("joke", currentJoke.setup, 50, showPunchlineButton);
-          })
-          .catch(() => {
-            try {
-              chrome.storage.local.get('lastJoke', (result) => {
-                if (result.lastJoke && result.lastJoke.setup) {
-                  currentJoke = result.lastJoke;
-                  console.log("Using cached joke as final fallback.");
-                  if (avatar) {
-                    avatar.src = "./images/intro.png";
-                    handleAvatarError(avatar);
-                  }
-                  typeWriterEffect("joke", currentJoke.setup, 50, showPunchlineButton);
-                } else {
-                  typeWriterEffect("joke", "Oops! Could not fetch a joke.", 50);
-                  if (avatar) {
-                    avatar.src = "./images/intro.png";
-                    handleAvatarError(avatar);
-                  }
-                }
-              });
-            } catch (cacheError) {
-              typeWriterEffect("joke", "Oops! Could not fetch a joke.", 50);
-              if (avatar) {
-                avatar.src = "./images/intro.png";
-                handleAvatarError(avatar);
-              }
-            }
-          });
-      });
-  }, 2000);
-}
-
-function showPunchlineButton() {
+/**
+ * Replaces the action buttons with a single button. Builds elements directly (no innerHTML).
+ */
+function renderButton({ id, label, ariaLabel, className, onClick, focus = true }) {
   const buttonContainer = document.querySelector(".button-container");
-
   if (!buttonContainer) {
     console.error("Error: Button container not found.");
     return;
   }
+  const button = document.createElement("button");
+  button.type = "button";
+  button.id = id;
+  button.className = `button ${className}`;
+  button.textContent = label;
+  if (ariaLabel) button.setAttribute("aria-label", ariaLabel);
+  button.addEventListener("click", onClick);
+  buttonContainer.replaceChildren(button);
+  buttonIn(button);
+  // Keep keyboard focus on the action area after the buttons are swapped.
+  if (focus) button.focus();
+}
 
-  // For one-liners, skip punchline step and go directly to "Get another joke"
-  if (currentJoke.isOneLiner) {
-    const avatar = document.querySelector(".avatar");
-    if (avatar) {
-      avatar.src = "./images/lol.png";
-      handleAvatarError(avatar);
-    }
+function setActionButtonsDisabled(disabled) {
+  document.querySelectorAll(".button-container button").forEach((button) => {
+    if (button.id !== "no-button") button.disabled = disabled;
+  });
+}
 
-    buttonContainer.innerHTML = `
-      <button id="joke-again-button" class="button button-blue" aria-label="Get another joke">Get another joke!</button>
-    `;
+function showPunchlineButton({ focus = true } = {}) {
+  renderButton({
+    id: "joke-button",
+    label: "See the punchline!",
+    ariaLabel: "See the punchline of the joke",
+    className: "button-green",
+    onClick: revealPunchline,
+    focus
+  });
+}
 
-    const jokeAgainButton = document.getElementById("joke-again-button");
-    if (jokeAgainButton) {
-      jokeAgainButton.addEventListener("click", initializeJoke);
-    }
+function showAnotherJokeButton({ focus = true } = {}) {
+  renderButton({
+    id: "joke-again-button",
+    label: "Get another joke!",
+    ariaLabel: "Get another joke",
+    className: "button-blue",
+    onClick: initializeJoke,
+    focus
+  });
+}
+
+function showRetryButton() {
+  renderButton({
+    id: "retry-button",
+    label: "Try again",
+    ariaLabel: "Try fetching a joke again",
+    className: "button-blue",
+    onClick: initializeJoke
+  });
+}
+
+function initializePopup() {
+  // Avatar image error handling lives in motion.js with the avatar poses.
+  playState("intro");
+
+  // Ad logo fallback (inline onerror handlers are blocked by the extension CSP).
+  const adLogo = document.querySelector(".ad-logo");
+  if (adLogo) {
+    const showAdFallback = () => {
+      const lockup = adLogo.closest(".ad-lockup");
+      if (lockup) lockup.hidden = true;
+      const fallback = document.querySelector(".ad-logo-tile .ad-fallback");
+      if (fallback) fallback.hidden = false;
+    };
+    adLogo.addEventListener("error", showAdFallback);
+    // The error may already have fired before this script ran.
+    if (adLogo.complete && adLogo.naturalWidth === 0) showAdFallback();
+  }
+
+  document.getElementById("yes-button").addEventListener("click", initializeJoke);
+  document.getElementById("no-button").addEventListener("click", closePopup);
+  document.getElementById("close-popup").addEventListener("click", closePopup);
+
+  loadCachedJoke();
+}
+
+async function initializeJoke() {
+  const myRequest = ++requestId;
+  setActionButtonsDisabled(true);
+  playState(currentJoke ? "again" : "thinking");
+  typeWriterEffect("Thinking of a good one...");
+
+  const minDelay = new Promise((resolve) => setTimeout(resolve, MIN_THINKING_MS));
+  let joke = await fetchJoke(currentJoke && currentJoke.setup);
+  await minDelay;
+  if (myRequest !== requestId) return;
+
+  if (joke) {
+    cacheJoke(joke);
+  } else {
+    // Every source failed: fall back to the last cached joke, if any.
+    const { lastJoke } = await storageGet("lastJoke");
+    if (myRequest !== requestId) return;
+    joke = normalizeJoke(lastJoke);
+    if (joke) console.log("Using cached joke as final fallback.");
+  }
+
+  if (!joke) {
+    currentJoke = null;
+    playState("error");
+    typeWriterEffect("Oops! Could not fetch a joke.", () => {
+      if (myRequest === requestId) showRetryButton();
+    });
     return;
   }
 
-  // Reset avatar to intro for two-part jokes (may have been stuck on thinking from cache fallback)
-  const avatar = document.querySelector(".avatar");
-  if (avatar) {
-    avatar.src = "./images/intro.png";
-    handleAvatarError(avatar);
-  }
-
-  // Replace Yes/No buttons with the "See the punchline" button
-  buttonContainer.innerHTML = `
-    <button id="joke-button" class="button button-green" aria-label="See the punchline of the joke">See the punchline!</button>
-  `;
-
-  // Add event listener to display the punchline
-  const jokeButton = document.getElementById("joke-button");
-  if (jokeButton) {
-    jokeButton.addEventListener("click", revealPunchline);
-  }
+  currentJoke = joke;
+  playState("setup");
+  typeWriterEffect(joke.setup, () => {
+    if (myRequest !== requestId) return;
+    if (joke.isOneLiner) {
+      playState("punch");
+      showAnotherJokeButton();
+    } else {
+      playState("cue");
+      showPunchlineButton();
+    }
+  });
 }
 
 function revealPunchline() {
-  if (currentJoke.punchline) {
-    // Update cache to mark punchline as shown
-    try {
-      chrome.storage.local.set({ lastJoke: { ...currentJoke, punchlineShown: true } });
-    } catch (error) {
-      console.error('Failed to update punchlineShown in cache:', error);
-    }
+  const joke = currentJoke;
+  const myRequest = requestId;
+  setActionButtonsDisabled(true);
 
-    // Use typewriter effect for punchline
-    typeWriterEffect("joke", currentJoke.punchline, 50, () => {
-      // Update the avatar to the laughing image
-      const avatar = document.querySelector(".avatar");
-      if (avatar) {
-        avatar.src = "./images/lol.png";
-        handleAvatarError(avatar);
-      }
-
-      // Change button to "Get another joke"
-      const buttonContainer = document.querySelector(".button-container");
-      if (!buttonContainer) {
-        console.error("Error: Button container not found.");
-        return;
-      }
-
-      buttonContainer.innerHTML = `
-        <button id="joke-again-button" class="button button-blue" aria-label="Get another joke">Get another joke!</button>
-      `;
-
-      // Add event listener for the "Get another joke" button
-      const jokeAgainButton = document.getElementById("joke-again-button");
-      if (jokeAgainButton) {
-        jokeAgainButton.addEventListener("click", initializeJoke);
-      }
+  if (!joke || !joke.punchline) {
+    playState("error");
+    typeWriterEffect("Oops, the punchline got lost! Try another one.", () => {
+      if (myRequest === requestId) showAnotherJokeButton();
     });
-  } else {
-    // Punchline missing — don't leave the user stuck
-    typeWriterEffect("joke", "Oops, the punchline got lost! Try another one.", 50);
-
-    const avatar = document.querySelector(".avatar");
-    if (avatar) {
-      avatar.src = "./images/intro.png";
-      handleAvatarError(avatar);
-    }
-
-    const buttonContainer = document.querySelector(".button-container");
-    if (buttonContainer) {
-      buttonContainer.innerHTML = `
-        <button id="joke-again-button" class="button button-blue" aria-label="Get another joke">Get another joke!</button>
-      `;
-      const jokeAgainButton = document.getElementById("joke-again-button");
-      if (jokeAgainButton) {
-        jokeAgainButton.addEventListener("click", initializeJoke);
-      }
-    }
+    return;
   }
+
+  cacheJoke(joke, true);
+  playState("setup");
+  typeWriterEffect(joke.punchline, () => {
+    if (myRequest !== requestId) return;
+    playState("punch");
+    showAnotherJokeButton();
+  });
 }
 
 function closePopup() {
   window.close();
 }
 
+// Module scripts run after parsing; start here, once every binding above is initialized.
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initializePopup);
+} else {
+  initializePopup();
+}

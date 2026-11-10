@@ -1,44 +1,72 @@
 .ad-container {
     display: flex;
     align-items: center;
-    justify-content: flex-start;
+    justify-content: center;
     gap: 12px;
+    min-height: 64px;
+    box-sizing: border-box;
     background-color: rgba(255, 255, 255, 0.03);
     padding: 12px;
     border-radius: 12px;
-    margin-top: 12px;
     text-decoration: none;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    transition: all 0.2s ease;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: background-color 0.2s ease, border-color 0.2s ease, translate 0.2s ease;
 }
 
 .ad-container:hover {
     background-color: rgba(255, 255, 255, 0.08);
-    transform: translateY(-1px);
-    border-color: rgba(255, 255, 255, 0.1);
+    translate: 0 -1px;
+    border-color: rgba(255, 255, 255, 0.14);
+}
+
+/* DFWSC lockup: transparent SVG mark plus live text, sitting on the dark card.
+   The mark's blue/gold are muted slightly so it is not the brightest thing in the footer. */
+.ad-lockup {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
 }
 
 .ad-logo {
-    max-width: 140px;
-    height: auto;
-    border-radius: 4px;
-    opacity: 0.9;
+    display: block;
+    height: 32px;
+    width: auto;
+    opacity: 0.92;
     transition: opacity 0.2s ease;
 }
 
-.ad-container:hover .ad-logo {
+.ad-wordmark {
+    color: #a9acb3;
+    font-size: 10px;
+    font-weight: 500;
+    line-height: 1.25;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.ad-logo-tile:hover .ad-logo {
     opacity: 1;
+}
+
+.ad-logo-tile:hover .ad-wordmark {
+    color: #c4c4c4;
+}
+
+.ad-lockup[hidden] {
+    display: none;
 }
 
 .ad-fallback {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
     gap: 2px;
 }
 
 .ad-text {
-    color: #a0a0a0;
+    color: #c4c4c4;
     font-size: 11px;
     font-weight: 500;
     text-transform: uppercase;
@@ -46,11 +74,15 @@
 }
 
 .ad-link {
-    color: #3b82f6;
+    color: #60a5fa;
     font-weight: 600;
     font-size: 13px;
 }
 
-.ad-link:hover {
-    color: #60a5fa;
+.ad-container:hover .ad-link {
+    color: #93c5fd;
+}
+
+.ad-fallback[hidden] {
+    display: none;
 }
