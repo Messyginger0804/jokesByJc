@@ -55,6 +55,17 @@ for (const file of entries.filter((e) => e.endsWith(".js") && !e.startsWith("ven
 }
 for (const ref of referenced) if (!existsSync(join(UNPACKED, ref))) fail(`referenced but not packaged: ${ref}`);
 
+// 4. Icons are real PNGs at the size their manifest key names (the store rejects stretched ones).
+const iconSizes = new Map([...Object.entries(packagedManifest.icons), ...Object.entries(packagedManifest.action.default_icon)].map(([size, file]) => [`${file}@${size}`, [file, Number(size)]]));
+for (const [file, size] of iconSizes.values()) {
+  const path = join(UNPACKED, file);
+  if (!existsSync(path)) continue;
+  const png = readFileSync(path);
+  const isPng = png.subarray(1, 4).toString("ascii") === "PNG";
+  const [w, h] = isPng ? [png.readUInt32BE(16), png.readUInt32BE(20)] : [0, 0];
+  if (w !== size || h !== size) fail(`${file} is ${isPng ? `${w}x${h}` : "not a PNG"}, manifest says ${size}x${size}`);
+}
+
 if (failures.length) {
   console.error(`Package check failed:\n  ${failures.join("\n  ")}`);
   // Never leave a bad build behind for EXT_DIR=dist/unpacked to pick up.

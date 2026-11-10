@@ -58,7 +58,7 @@ npm run lint           # ESLint
 npm test               # unit tests (Vitest + jsdom)
 npm run coverage       # unit tests with the 100% coverage gate; HTML report in coverage/
 npm run e2e            # loads the unpacked extension in headless Chrome, joke APIs mocked
-npm run check:package  # runs build.sh and checks the zip contents and version
+npm run check:package  # runs build.sh and checks the zip contents, version and icon sizes
 npm run check:apis     # manual: calls every live joke source once (not run in CI)
 ```
 
@@ -89,6 +89,13 @@ To build locally, run `./build.sh` (or `npm run check:package`). The zip is not 
 3. `.github/workflows/release.yml` runs the full CI checks, fails if the tag doesn't match the
    manifest version, then publishes a GitHub release with `jokesByJc-vX.Y.zip` and its `.sha256`.
 4. Download that zip and upload it to the Chrome Web Store developer dashboard (this step is manual).
+   `store/SUBMISSION.md` has the listing text, permission justifications and the asset list.
+
+## Store assets
+
+`store/` holds the Chrome Web Store listing assets (screenshots, promo tile, marquee) and the
+scripts that generate them and the icons. None of it ships in the extension zip; see
+`store/README.md`.
 
 ## Code layout
 
@@ -109,6 +116,7 @@ To build locally, run `./build.sh` (or `npm run check:package`). The zip is not 
 
 ## Version
 
-4.2
+4.3
 
+- 4.3: new toolbar and store icons drawn at their real sizes (16, 48 and 128; the old 48 and 128 were 32 px images), plus Chrome Web Store screenshots and promo images under `store/`.
 - 4.2: animated popup (Motion mini + canvas-confetti, honours reduced motion), reliability fixes, and a new transparent SVG DFWSC logo (replaces the 240 KB JPG).
