@@ -24,5 +24,8 @@
     "jsdom": "31.0.0",
     "puppeteer": "25.17.0",
     "vitest": "5.1.0"
+  },
+  "overrides": {
+    "minimatch": "11.0.6"
   }
 }

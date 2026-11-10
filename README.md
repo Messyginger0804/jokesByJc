@@ -66,7 +66,11 @@ npm run check:apis     # manual: calls every live joke source once (not run in C
 `check:package` unpacks.
 
 CI (`.github/workflows/ci.yml`) runs lint, unit tests with coverage, the package check and
-the E2E suite (source and packaged build) on every push and pull request.
+the E2E suite (source and packaged build) on pull requests and on pushes to `main`.
+
+`package.json` overrides `minimatch` to 11.0.6 because eslint 10 still asks for `^10.2.x`, which
+is affected by GHSA-g3hv-75wg-m249 (dev-only; nothing ships). Drop the override once eslint's own
+range allows a patched version. Don't use `npm audit fix --force`, which downgrades eslint to 9.
 
 ## Packaging and releases
 
