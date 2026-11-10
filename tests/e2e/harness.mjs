@@ -1,4 +1,5 @@
 // Loads the unpacked extension in headless Chrome for Testing and mocks every joke API.
+// Tests use withExtension() so each one gets its own profile and no state carries over.
 // EXT_DIR points at the folder to load (defaults to the repo root; CI also runs it against
 // the unzipped package).
 import puppeteer from "puppeteer";
@@ -50,10 +51,28 @@ export async function launch() {
   };
 }
 
+/** Runs `fn` against a freshly launched extension with an empty profile, then closes it. */
+export async function withExtension(fn) {
+  const ext = await launch();
+  try {
+    return await fn(ext);
+  } finally {
+    await ext.close();
+  }
+}
+
+/** Writes `items` to chrome.storage.local from the service worker, before the popup opens. */
+export async function seedStorage(ext, items) {
+  const worker = await ext.worker.worker();
+  await worker.evaluate((data) => chrome.storage.local.set(data), items);
+}
+
 /**
  * Opens the popup in a tab with the joke APIs mocked.
  * `route(host, n)` returns "ok" (answer with that API's shape), "fail" (connection refused),
- * "500" or "hang" (never answers, so the 5 s timeout applies). Every request is recorded.
+ * "500" or "hang" (never answers, so the 5 s timeout applies). Every request is recorded in
+ * `log.requests`; `n` is the request's 1-based position there, so tests can derive the
+ * expected body from `log.requests.length` instead of hard-coding a count.
  */
 export async function openPopup(ext, { route = () => "ok", reducedMotion = false } = {}) {
   const page = await ext.browser.newPage();
@@ -61,14 +80,14 @@ export async function openPopup(ext, { route = () => "ok", reducedMotion = false
   if (reducedMotion) await page.emulateMediaFeatures([{ name: "prefers-reduced-motion", value: "reduce" }]);
 
   const log = { requests: [], errors: [], warnings: [], csp: [] };
-  let n = 0;
   await page.setRequestInterception(true);
   page.on("request", (request) => {
     const url = new URL(request.url());
     if (url.protocol === "chrome-extension:") return request.continue();
     log.requests.push(url.host);
     if (!JOKE_HOSTS.includes(url.host)) return request.abort("blockedbyclient");
-    const mode = route(url.host, ++n);
+    const n = log.requests.length;
+    const mode = route(url.host, n);
     if (mode === "fail") return request.abort("connectionrefused");
     if (mode === "hang") return;
     if (mode === "500") return request.respond({ status: 500, contentType: "application/json", body: "{}" });
