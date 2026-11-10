@@ -14,20 +14,25 @@ const POPUP_WIDTH = 500;
 const POPUP_HEIGHT = 600;
 
 chrome.runtime.onInstalled.addListener(() => {
-  ensureDailyAlarm();
+  ensureDailyAlarm().catch(logScheduleError);
 });
 
-chrome.runtime.onStartup.addListener(async () => {
-  await ensureDailyAlarm();
-  // Give the browser a moment to restore its session before opening a window.
-  await chrome.alarms.create(STARTUP_ALARM_NAME, { delayInMinutes: STARTUP_DELAY_MINUTES });
-});
+chrome.runtime.onStartup.addListener(() =>
+  ensureDailyAlarm()
+    // Give the browser a moment to restore its session before opening a window.
+    .then(() => chrome.alarms.create(STARTUP_ALARM_NAME, { delayInMinutes: STARTUP_DELAY_MINUTES }))
+    .catch(logScheduleError)
+);
 
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === ALARM_NAME || alarm.name === STARTUP_ALARM_NAME) {
     checkAndShowPopup();
   }
 });
+
+function logScheduleError(error) {
+  console.error("Could not schedule the daily popup:", error);
+}
 
 export async function ensureDailyAlarm() {
   const existing = await chrome.alarms.get(ALARM_NAME);
@@ -66,7 +71,11 @@ export async function showPopupIfOwed() {
     });
   } catch (error) {
     // Couldn't open a window; let the next check retry today.
-    await chrome.storage.local.set({ lastPopupDate: lastPopupDate ?? null });
+    if (lastPopupDate === undefined) {
+      await chrome.storage.local.remove("lastPopupDate");
+    } else {
+      await chrome.storage.local.set({ lastPopupDate });
+    }
     throw error;
   }
 }
