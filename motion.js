@@ -36,15 +36,12 @@ function T(x = 0, y = 0, rotate = 0, sx = 1, sy = sx) {
 }
 
 function track(animation) {
-  if (animation) running.push(animation);
-  return animation;
+  running.push(animation);
 }
 
+// Timers are cleared by stopState(), so a later() callback never outlives its state.
 function later(ms, fn) {
-  const token = stateToken;
-  timers.push(setTimeout(() => {
-    if (token === stateToken) fn();
-  }, ms));
+  timers.push(setTimeout(fn, ms));
 }
 
 /** Stops everything the previous state started. Stopping commits the current frame, so the next animation starts from where the last one was. */
@@ -142,9 +139,9 @@ function onPointerLeave() {
   tilt.lastMove = 0;
 }
 
+// Never runs while reduced or hidden: applyReducedMotion() and pauseIdle() cancel the pending frame.
 function tiltFrame(now) {
   tilt.frame = 0;
-  if (reduced || document.hidden) return;
   if (now - tilt.lastMove > SWAY_AFTER_MS) {
     const t = (now - tilt.start) / 1000;
     tilt.targetY = 2.2 * Math.sin((t * 2 * Math.PI) / 7);
@@ -166,14 +163,20 @@ function applyTilt(x, y) {
   style.setProperty("--parallax-bubble", `${(-y * 0.35).toFixed(2)}px ${(x * 0.25).toFixed(2)}px`);
 }
 
+// The loop only runs while the popup is visible and focused (a daily window left open in the
+// background must not keep writing styles every frame).
 function startTilt() {
-  if (reduced || document.hidden || tilt.frame) return;
+  if (reduced || document.hidden || !document.hasFocus() || tilt.frame) return;
   tilt.frame = requestAnimationFrame(tiltFrame);
 }
 
-function stopTilt() {
-  if (tilt.frame) cancelAnimationFrame(tilt.frame);
+function pauseTilt() {
+  cancelAnimationFrame(tilt.frame);
   tilt.frame = 0;
+}
+
+function stopTilt() {
+  pauseTilt();
   tilt.x = tilt.y = tilt.targetX = tilt.targetY = 0;
   applyTilt(0, 0);
 }
@@ -451,7 +454,9 @@ function init() {
   document.addEventListener("pointerup", pressUp);
   document.addEventListener("pointercancel", pressUp);
   document.addEventListener("pointerout", (event) => {
-    if (event.target.closest && event.target.closest(PRESSABLE) && !event.target.contains(event.relatedTarget)) pressUp(event);
+    // Release only when the pointer leaves the pressable itself, not when it moves between its children.
+    const target = event.target.closest && event.target.closest(PRESSABLE);
+    if (target && !target.contains(event.relatedTarget)) pressUp(event);
   });
   document.addEventListener("click", keyboardPress, true);
   document.addEventListener("pointermove", onPointerMove, { passive: true });
@@ -459,6 +464,7 @@ function init() {
 
   const pauseIdle = () => {
     if (breathing) breathing.pause();
+    pauseTilt();
   };
   const resumeIdle = () => {
     if (breathing && !document.hidden) breathing.play();
