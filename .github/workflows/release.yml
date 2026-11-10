@@ -1,0 +1,70 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify-tag:
+    name: Verify tag matches manifest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Tag must be vX.Y[.Z] and equal manifest.json version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          case "$TAG" in
+            v[0-9]*.[0-9]*) ;;
+            *) echo "::error::Tag '$TAG' is not of the form vX.Y[.Z]"; exit 1 ;;
+          esac
+          if ! printf '%s' "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+(\.[0-9]+)?$'; then
+            echo "::error::Tag '$TAG' is not of the form vX.Y[.Z]"; exit 1
+          fi
+          MANIFEST=$(node -p 'require("./manifest.json").version')
+          if [ "v$MANIFEST" != "$TAG" ]; then
+            echo "::error::Tag $TAG does not match manifest.json version $MANIFEST"; exit 1
+          fi
+
+  ci:
+    name: CI
+    needs: verify-tag
+    uses: ./.github/workflows/ci.yml
+
+  release:
+    name: Publish release
+    needs: [verify-tag, ci]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      TAG: ${{ github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build the package
+        run: ./build.sh
+      - name: Name the zip and compute its checksum
+        run: |
+          ZIP="jokesByJc-${TAG}.zip"
+          mv jokesByJc-extension.zip "$ZIP"
+          sha256sum "$ZIP" > "$ZIP.sha256"
+          cat "$ZIP.sha256"
+      - name: Create the GitHub release
+        run: |
+          ZIP="jokesByJc-${TAG}.zip"
+          printf 'Chrome extension package for %s. Verify the download with the attached `.sha256` file (`sha256sum -c %s.sha256`).\n' "$TAG" "$ZIP" > notes-header.md
+          gh release create "$TAG" "$ZIP" "$ZIP.sha256" \
+            --verify-tag \
+            --title "$TAG" \
+            --generate-notes \
+            --notes-file notes-header.md

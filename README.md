@@ -74,12 +74,21 @@ range allows a patched version. Don't use `npm audit fix --force`, which downgra
 
 ## Packaging and releases
 
-1. Bump `version` in `manifest.json` and under "Version" below (the package check enforces that they match).
-2. Push; the CI run uploads `jokesByJc-extension` (the Web Store zip) and the coverage report as artifacts.
-3. Download the zip from the CI run and upload it to the Chrome Web Store.
+CI uploads `jokesByJc-extension` (the zip) and the coverage report as artifacts on every run.
+To build locally, run `./build.sh` (or `npm run check:package`). The zip is not committed; `*.zip` is ignored.
 
-To build locally instead, run `./build.sh` (or `npm run check:package`). The zip is not
-committed; `*.zip` is ignored.
+## Releasing
+
+1. Bump `version` in `manifest.json` and under "Version" below (the package check enforces that they match) in a PR, and merge it.
+2. Tag the merge commit and push the tag:
+
+   ```sh
+   git tag -a vX.Y -m 'vX.Y' && git push origin vX.Y
+   ```
+
+3. `.github/workflows/release.yml` runs the full CI checks, fails if the tag doesn't match the
+   manifest version, then publishes a GitHub release with `jokesByJc-vX.Y.zip` and its `.sha256`.
+4. Download that zip and upload it to the Chrome Web Store developer dashboard (this step is manual).
 
 ## Code layout
 
