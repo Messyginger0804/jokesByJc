@@ -1,0 +1,6 @@
+# Normalize line endings; keep text files UTF-8 with LF in the repo.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.zip binary
