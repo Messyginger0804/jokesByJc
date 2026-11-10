@@ -1,14 +1,19 @@
 # Jokes By JC
 
-A fun Chrome extension that delivers jokes with an animated character avatar.
+A Chrome extension (Manifest V3) where an animated character tells you a joke.
 
 ## Features
 
-- **Interactive joke delivery** - Click "Yes" to hear a joke, with setup and punchline revealed separately
-- **Typewriter effect** - Text is displayed with a typing animation
-- **Animated avatar** - Character changes expressions (thinking, laughing) based on the joke state
-- **Daily reminders** - Automatically pops up once per day to brighten your day
-- **Blog of the month** - Displays featured content from [byjc.dev](https://byjc.dev)
+- **Interactive joke delivery** - Click "Yes" to hear a joke; the setup and punchline are revealed separately
+- **Typewriter effect** - Text is typed out (shown instantly if you prefer reduced motion)
+- **Animated avatar** - JC springs in, hops when you say yes, points at the punchline button,
+  laughs (with a confetti burst) at the punchline and settles into a cool pose; the card tilts
+  slightly toward the pointer
+- **Reduced motion** - With "reduce motion" turned on in the OS, every animation becomes a short
+  fade or an instant change, and confetti and tilt are off (changes apply live)
+- **Daily joke** - A joke window opens automatically once per day
+- **Remembers your last joke** - Reopening the popup shows the last joke right away
+- **Links** - Footer links to [dfwsc.com](https://dfwsc.com) and [www.byjc.dev](https://www.byjc.dev)
 
 ## Installation
 
@@ -18,40 +23,60 @@ A fun Chrome extension that delivers jokes with an animated character avatar.
 4. Click "Load unpacked" and select this folder
 5. The extension icon will appear in your toolbar
 
+No build step is needed. The two libraries in `vendor/` are committed pre-built;
+see `vendor/README.md` for versions and the command used to rebuild them.
+
 ## How It Works
 
-- Jokes are loaded from a local `jokes.json` file
-- Falls back to the [Official Joke API](https://official-joke-api.appspot.com) if local jokes aren't available
-- Uses Chrome's `alarms` and `storage` APIs for the daily popup feature
+- Jokes come from the byjc API: `https://www.byjc.dev/api/jokes/random`
+- If that fails or takes longer than 5 seconds, the popup tries these fallbacks in random order:
+  [Official Joke API](https://official-joke-api.appspot.com/random_joke),
+  [JokeAPI](https://v2.jokeapi.dev) and [icanhazdadjoke](https://icanhazdadjoke.com)
+- If every source fails, the last cached joke is shown; otherwise a "Try again" button appears
+- The last joke is stored in `chrome.storage.local`
+- `background.js` runs an hourly `chrome.alarms` check (plus one shortly after the browser starts)
+  and opens `popup.html` in its own window if today's joke hasn't been shown yet
 
-## Development
+## Permissions
 
-The extension itself has no build step. Node 22.12+ is only needed for the dev tooling
-(lint and tests); nothing in `node_modules/` ships.
+- `alarms` - schedule the daily joke check
+- `storage` - remember the last joke and the date of the last daily popup
+- `https://www.byjc.dev/*` - fetch jokes from the byjc API
+
+The fallback APIs send `Access-Control-Allow-Origin: *`, so they don't need host permissions.
+
+## Testing the joke sources
 
 ```sh
-npm install         # dev dependencies, including Chrome for Testing for the E2E suite
-npm run lint        # ESLint
-npm test            # unit tests (Vitest + jsdom, in-memory chrome.* mock)
-npm run coverage    # unit tests with coverage thresholds; HTML report in coverage/
-npm run e2e         # loads the unpacked extension in headless Chrome, joke APIs mocked
-npm run check:apis  # manual: calls the live fallback joke APIs once (not run in CI)
+node test-apis.js
 ```
 
-- `tests/unit/` drives `popup.js` and `background.js` as-is through the DOM and `chrome.*`
-  events. Known bugs are recorded as `it.fails` / `it.todo` tests rather than asserted as
-  correct, so each one turns into a failing "expected fail" once it is fixed.
-- `tests/e2e/` launches a fresh browser profile per test and seeds `chrome.storage` explicitly,
-  so tests can run alone or in any order.
-- CI (`.github/workflows/ci.yml`) runs lint, unit tests with coverage thresholds, and the E2E
-  suite on pull requests and on pushes to `main`.
+Calls every joke source once and reports which ones respond with a usable joke (Node 18+).
+
+## Packaging
+
+```sh
+./build.sh
+```
+
+Creates `jokesByJc-extension.zip` with only the files the extension needs, ready to upload to the Chrome Web Store.
+
+## Code layout
+
+- `popup.js` - joke fetching, caching and the button flow; calls named animation states
+- `motion.js` - all popup animation (`playState("intro" | "thinking" | "again" | "setup" | "cue" | "punch" | "error")`)
+- `vendor/motion-mini.js` - [Motion](https://motion.dev) `animate` (mini), `spring`, `stagger`
+- `vendor/confetti.js` - [canvas-confetti](https://github.com/catdad/canvas-confetti), loaded only when the punchline lands
 
 ## Tech Stack
 
 - Manifest V3 Chrome Extension
-- Vanilla JavaScript
+- Vanilla JavaScript (ES modules)
 - CSS3
+- Motion (mini) and canvas-confetti, vendored
 
 ## Version
 
-2.3
+4.2
+
+- 4.2: animated popup (Motion mini + canvas-confetti, honours reduced motion), reliability fixes, and a new transparent SVG DFWSC logo (replaces the 240 KB JPG).
