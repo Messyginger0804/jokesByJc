@@ -235,6 +235,22 @@ body {
     margin-top: 8px;
 }
 
+/* Daily joke opt-in */
+.daily-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 14px;
+    font-size: 13px;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.daily-toggle input {
+    margin: 0;
+    accent-color: var(--accent-blue);
+}
+
 /* General Button Styles */
 .button {
     flex: 1;

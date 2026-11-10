@@ -242,7 +242,7 @@ try {
   mkdirSync(SHOTS, { recursive: true });
   mkdirSync(PROMO, { recursive: true });
   const shots = [
-    ["01-intro", caps.intro, "A joke a day, delivered by JC", "Click the toolbar icon any time, or let JC pop in once a day with a new one."],
+    ["01-intro", caps.intro, "A joke a day, delivered by JC", "Click the toolbar icon any time, or switch on the optional daily joke."],
     ["02-setup", caps.setup, "First, the setup&hellip;", "JC types it out, then points you to the punchline when you&rsquo;re ready."],
     ["03-punchline", caps.punch, "&hellip;then the punchline!", "JC cracks up with a burst of confetti. Reduced-motion settings are respected."],
     ["04-another", caps.end, "One more? Sure.", "Grab another joke whenever you like. No account, no tracking, just jokes."]

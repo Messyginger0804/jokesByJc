@@ -11,7 +11,7 @@ A Chrome extension (Manifest V3) where an animated character tells you a joke.
   slightly toward the pointer
 - **Reduced motion** - With "reduce motion" turned on in the OS, every animation becomes a short
   fade or an instant change, and confetti and tilt are off (changes apply live)
-- **Daily joke** - A joke window opens automatically once per day
+- **Daily joke (optional, off by default)** - Tick "Show me a joke once a day" in the popup and a small joke window opens once per day. Nothing opens on its own until you do
 - **Remembers your last joke** - Reopening the popup shows the last joke right away: the setup with
   the punchline button if you had not revealed it yet, otherwise the setup and punchline together
 - **Links** - Footer links to [dfwsc.com](https://dfwsc.com) and [www.byjc.dev](https://www.byjc.dev)
@@ -36,13 +36,15 @@ see `vendor/README.md` for versions and the command used to rebuild them.
 - The whole search stops after 8 seconds, so "Thinking..." never waits out every timeout in turn
 - If every source fails, the last cached joke is shown (unless it is the one already on screen); otherwise a "Try again" button appears
 - The last joke is stored in `chrome.storage.local`
-- `background.js` runs an hourly `chrome.alarms` check (plus one shortly after the browser starts)
-  and opens `popup.html` in its own window if today's joke hasn't been shown yet
+- The daily joke setting is `dailyPopupEnabled` in `chrome.storage.local`; a missing value means off
+- Only while it is on, `background.js` runs an hourly `chrome.alarms` check (plus one shortly after
+  the browser starts) and opens `popup.html` in its own window if today's joke hasn't been shown yet;
+  turning it off clears the alarms
 
 ## Permissions
 
-- `alarms` - schedule the daily joke check
-- `storage` - remember the last joke and the date of the last daily popup
+- `alarms` - schedule the daily joke check, only when the user turns the daily joke on
+- `storage` - remember the last joke, the date of the last daily popup and the daily joke setting
 - `https://www.byjc.dev/*` - fetch jokes from the byjc API
 
 The fallback APIs send `Access-Control-Allow-Origin: *`, so they don't need host permissions.
@@ -99,7 +101,7 @@ scripts that generate them and the icons. None of it ships in the extension zip;
 
 ## Code layout
 
-- `background.js` - service worker (ES module): hourly `chrome.alarms` check that opens the daily popup window
+- `background.js` - service worker (ES module): hourly `chrome.alarms` check (only when the daily joke is turned on) that opens the daily popup window
 - `popup.js` - caching, the typewriter and the button flow; calls named animation states
 - `jokes.js` - joke sources, response parsing, validation and the fetch chain (shared with `scripts/check-apis.mjs`)
 - `motion.js` - all popup animation (`playState("intro" | "thinking" | "again" | "setup" | "cue" | "punch" | "error")`)
@@ -116,7 +118,8 @@ scripts that generate them and the icons. None of it ships in the extension zip;
 
 ## Version
 
-4.3
+4.4
 
+- 4.4: the once-a-day joke window is now opt-in and off by default; turn it on with the checkbox in the popup.
 - 4.3: new toolbar and store icons drawn at their real sizes (16, 48 and 128; the old 48 and 128 were 32 px images), plus Chrome Web Store screenshots and promo images under `store/`.
 - 4.2: animated popup (Motion mini + canvas-confetti, honours reduced motion), reliability fixes, and a new transparent SVG DFWSC logo (replaces the 240 KB JPG).

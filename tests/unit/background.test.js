@@ -26,6 +26,68 @@ describe("listener registration", () => {
     expect(chrome.runtime.onInstalled.addListener).toHaveBeenCalledTimes(1);
     expect(chrome.runtime.onStartup.addListener).toHaveBeenCalledTimes(1);
     expect(chrome.alarms.onAlarm.addListener).toHaveBeenCalledTimes(1);
+    expect(chrome.storage.onChanged.addListener).toHaveBeenCalledTimes(1);
+  });
+});
+
+const ON = { dailyPopupEnabled: true };
+
+describe("isDailyPopupEnabled", () => {
+  it.each([
+    [{}, false],
+    [{ dailyPopupEnabled: false }, false],
+    [{ dailyPopupEnabled: "yes" }, false],
+    [{ dailyPopupEnabled: true }, true]
+  ])("reads %j as %s", async (store, expected) => {
+    const bg = await load({ store });
+    expect(await bg.isDailyPopupEnabled()).toBe(expected);
+  });
+});
+
+describe("syncDailyAlarm", () => {
+  it("schedules the alarm when enabled", async () => {
+    const bg = await load({ store: ON });
+    await bg.syncDailyAlarm();
+    expect(chrome.alarms.map.has("dailyPopup")).toBe(true);
+  });
+
+  it("clears both alarms when disabled", async () => {
+    const bg = await load({ alarms: { dailyPopup: { periodInMinutes: 60 }, dailyPopupStartup: {} } });
+    await bg.syncDailyAlarm();
+    expect(chrome.alarms.map.size).toBe(0);
+  });
+});
+
+describe("storage.onChanged", () => {
+  it("schedules the alarm when the setting is turned on", async () => {
+    await load({ store: ON });
+    await chrome.storage.onChanged.dispatch({ dailyPopupEnabled: { newValue: true } }, "local");
+    await flush();
+    expect(chrome.alarms.map.has("dailyPopup")).toBe(true);
+  });
+
+  it("clears the alarm when the setting is turned off", async () => {
+    await load({ alarms: { dailyPopup: { periodInMinutes: 60 } } });
+    await chrome.storage.onChanged.dispatch({ dailyPopupEnabled: { newValue: false } }, "local");
+    await flush();
+    expect(chrome.alarms.map.has("dailyPopup")).toBe(false);
+  });
+
+  it("ignores other keys and other storage areas", async () => {
+    await load({ store: ON });
+    await chrome.storage.onChanged.dispatch({ lastJoke: {} }, "local");
+    await chrome.storage.onChanged.dispatch({ dailyPopupEnabled: { newValue: true } }, "sync");
+    await flush();
+    expect(chrome.alarms.create).not.toHaveBeenCalled();
+    expect(chrome.alarms.clear).not.toHaveBeenCalled();
+  });
+
+  it("logs instead of leaving an unhandled rejection when syncing fails", async () => {
+    await load({ store: ON });
+    chrome.alarms.get.mockRejectedValueOnce(new Error("alarms down"));
+    await chrome.storage.onChanged.dispatch({ dailyPopupEnabled: { newValue: true } }, "local");
+    await flush();
+    expect(console.error).toHaveBeenCalledWith("Could not schedule the daily popup:", expect.any(Error));
   });
 });
 
@@ -54,14 +116,29 @@ describe("ensureDailyAlarm", () => {
 });
 
 describe("onInstalled", () => {
-  it("ensures the alarm on install or update", async () => {
+  it("schedules nothing on a fresh install (opt-in)", async () => {
     await load();
     await chrome.runtime.onInstalled.dispatch({ reason: "install" });
+    await flush();
+    expect(chrome.alarms.create).not.toHaveBeenCalled();
+  });
+
+  it("clears an alarm left by an older version when the setting is off", async () => {
+    await load({ alarms: { dailyPopup: { periodInMinutes: 60 } } });
+    await chrome.runtime.onInstalled.dispatch({ reason: "update" });
+    await flush();
+    expect(chrome.alarms.map.has("dailyPopup")).toBe(false);
+  });
+
+  it("ensures the alarm on install or update when enabled", async () => {
+    await load({ store: ON });
+    await chrome.runtime.onInstalled.dispatch({ reason: "install" });
+    await flush();
     expect(chrome.alarms.map.get("dailyPopup")).toEqual({ delayInMinutes: 60, periodInMinutes: 60 });
   });
 
   it("logs instead of leaving an unhandled rejection when the alarms API fails", async () => {
-    await load();
+    await load({ store: ON });
     chrome.alarms.get.mockRejectedValueOnce(new Error("alarms down"));
     await chrome.runtime.onInstalled.dispatch({ reason: "update" });
     await flush();
@@ -70,15 +147,21 @@ describe("onInstalled", () => {
 });
 
 describe("onStartup", () => {
+  it("schedules nothing on startup when the daily joke is off", async () => {
+    await load();
+    await chrome.runtime.onStartup.dispatch();
+    expect(chrome.alarms.create).not.toHaveBeenCalled();
+  });
+
   it("keeps the existing alarm and schedules a one-shot startup check", async () => {
-    await load({ alarms: { dailyPopup: { periodInMinutes: 60 } } });
+    await load({ store: ON, alarms: { dailyPopup: { periodInMinutes: 60 } } });
     await chrome.runtime.onStartup.dispatch();
     expect(chrome.alarms.create).toHaveBeenCalledTimes(1);
     expect(chrome.alarms.create).toHaveBeenCalledWith("dailyPopupStartup", { delayInMinutes: 1 });
   });
 
   it("logs instead of leaving an unhandled rejection when scheduling fails", async () => {
-    await load();
+    await load({ store: ON });
     chrome.alarms.create.mockRejectedValue(new Error("quota"));
     await chrome.runtime.onStartup.dispatch();
     await flush();
@@ -88,7 +171,7 @@ describe("onStartup", () => {
 
 describe("onAlarm", () => {
   it.each(["dailyPopup", "dailyPopupStartup"])("opens the popup window when %s fires", async (name) => {
-    await load();
+    await load({ store: ON });
     await chrome.alarms.onAlarm.dispatch({ name });
     await flush();
     expect(chrome.windows.create).toHaveBeenCalledWith({
@@ -98,6 +181,14 @@ describe("onAlarm", () => {
       height: 600,
       focused: true
     });
+  });
+
+  it("opens nothing when an alarm fires while the daily joke is off", async () => {
+    await load();
+    await chrome.alarms.onAlarm.dispatch({ name: "dailyPopup" });
+    await flush();
+    expect(chrome.windows.create).not.toHaveBeenCalled();
+    expect(chrome.storage.local.set).not.toHaveBeenCalled();
   });
 
   it("ignores unrelated alarms", async () => {
@@ -111,34 +202,34 @@ describe("onAlarm", () => {
 
 describe("showPopupIfOwed", () => {
   it("records today's date and opens one window", async () => {
-    const bg = await load();
+    const bg = await load({ store: ON });
     await bg.showPopupIfOwed();
     expect(chrome.storage.local.data.lastPopupDate).toBe(new Date().toDateString());
     expect(chrome.windows.create).toHaveBeenCalledTimes(1);
   });
 
   it("does nothing when today's popup was already shown", async () => {
-    const bg = await load({ store: { lastPopupDate: new Date().toDateString() } });
+    const bg = await load({ store: { ...ON, lastPopupDate: new Date().toDateString() } });
     await bg.showPopupIfOwed();
     expect(chrome.windows.create).not.toHaveBeenCalled();
     expect(chrome.storage.local.set).not.toHaveBeenCalled();
   });
 
   it("shows the popup again on a new day", async () => {
-    const bg = await load({ store: { lastPopupDate: "Mon Jan 01 2001" } });
+    const bg = await load({ store: { ...ON, lastPopupDate: "Mon Jan 01 2001" } });
     await bg.showPopupIfOwed();
     expect(chrome.windows.create).toHaveBeenCalledTimes(1);
   });
 
   it("restores the previous date when the window cannot be opened", async () => {
-    const bg = await load({ store: { lastPopupDate: "Mon Jan 01 2001" } });
+    const bg = await load({ store: { ...ON, lastPopupDate: "Mon Jan 01 2001" } });
     chrome.windows.create.mockRejectedValueOnce(new Error("no browser window"));
     await expect(bg.showPopupIfOwed()).rejects.toThrow("no browser window");
     expect(chrome.storage.local.data.lastPopupDate).toBe("Mon Jan 01 2001");
   });
 
   it("removes the date instead of storing null when there was no previous popup", async () => {
-    const bg = await load();
+    const bg = await load({ store: ON });
     chrome.windows.create.mockRejectedValueOnce(new Error("no browser window"));
     await expect(bg.showPopupIfOwed()).rejects.toThrow();
     expect("lastPopupDate" in chrome.storage.local.data).toBe(false);
@@ -148,13 +239,13 @@ describe("showPopupIfOwed", () => {
 
 describe("checkAndShowPopup", () => {
   it("serializes overlapping checks so only one window opens", async () => {
-    const bg = await load();
+    const bg = await load({ store: ON });
     await Promise.all([bg.checkAndShowPopup(), bg.checkAndShowPopup(), bg.checkAndShowPopup()]);
     expect(chrome.windows.create).toHaveBeenCalledTimes(1);
   });
 
   it("logs a failed check and lets the next check retry", async () => {
-    const bg = await load();
+    const bg = await load({ store: ON });
     chrome.windows.create.mockRejectedValueOnce(new Error("no browser window"));
     await bg.checkAndShowPopup();
     expect(console.error).toHaveBeenCalledWith("Daily popup check failed:", expect.any(Error));
