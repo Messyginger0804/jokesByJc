@@ -32,7 +32,7 @@ see `vendor/README.md` for versions and the command used to rebuild them.
 - If that fails or takes longer than 5 seconds, the popup tries these fallbacks in random order:
   [Official Joke API](https://official-joke-api.appspot.com/random_joke),
   [JokeAPI](https://v2.jokeapi.dev) and [icanhazdadjoke](https://icanhazdadjoke.com)
-- If every source fails, the last cached joke is shown; otherwise a "Try again" button appears
+- If every source fails, the last cached joke is shown (unless it is the one already on screen); otherwise a "Try again" button appears
 - The last joke is stored in `chrome.storage.local`
 - `background.js` runs an hourly `chrome.alarms` check (plus one shortly after the browser starts)
   and opens `popup.html` in its own window if today's joke hasn't been shown yet
@@ -45,28 +45,45 @@ see `vendor/README.md` for versions and the command used to rebuild them.
 
 The fallback APIs send `Access-Control-Allow-Origin: *`, so they don't need host permissions.
 
-## Testing the joke sources
+## Development
+
+The extension itself has no build step. Node 22.12+ is only needed for the dev tooling
+(lint, tests, packaging); nothing in `node_modules/` ships.
 
 ```sh
-node test-apis.js
+npm install            # dev dependencies, including Chrome for Testing for the E2E suite
+npm run lint           # ESLint
+npm test               # unit tests (Vitest + jsdom)
+npm run coverage       # unit tests with the 100% coverage gate; HTML report in coverage/
+npm run e2e            # loads the unpacked extension in headless Chrome, joke APIs mocked
+npm run check:package  # runs build.sh and checks the zip contents and version
+npm run check:apis     # manual: calls every live joke source once (not run in CI)
 ```
 
-Calls every joke source once and reports which ones respond with a usable joke (Node 18+).
+`EXT_DIR=dist/unpacked npm run e2e` runs the E2E suite against the packaged build that
+`check:package` unpacks.
 
-## Packaging
+CI (`.github/workflows/ci.yml`) runs lint, unit tests with coverage, the package check and
+the E2E suite (source and packaged build) on every push and pull request.
 
-```sh
-./build.sh
-```
+## Packaging and releases
 
-Creates `jokesByJc-extension.zip` with only the files the extension needs, ready to upload to the Chrome Web Store.
+1. Bump `version` in `manifest.json` and under "Version" below (the package check enforces that they match).
+2. Push; the CI run uploads `jokesByJc-extension` (the Web Store zip) and the coverage report as artifacts.
+3. Download the zip from the CI run and upload it to the Chrome Web Store.
+
+To build locally instead, run `./build.sh` (or `npm run check:package`). The zip is not
+committed; `*.zip` is ignored.
 
 ## Code layout
 
-- `popup.js` - joke fetching, caching and the button flow; calls named animation states
+- `background.js` - service worker (ES module): hourly `chrome.alarms` check that opens the daily popup window
+- `popup.js` - caching, the typewriter and the button flow; calls named animation states
+- `jokes.js` - joke sources, response parsing, validation and the fetch chain (shared with `scripts/check-apis.mjs`)
 - `motion.js` - all popup animation (`playState("intro" | "thinking" | "again" | "setup" | "cue" | "punch" | "error")`)
 - `vendor/motion-mini.js` - [Motion](https://motion.dev) `animate` (mini), `spring`, `stagger`
 - `vendor/confetti.js` - [canvas-confetti](https://github.com/catdad/canvas-confetti), loaded only when the punchline lands
+- `tests/unit/` - Vitest unit tests with an in-memory `chrome.*` mock; `tests/e2e/` - Puppeteer tests
 
 ## Tech Stack
 
