@@ -3,7 +3,7 @@ import globals from "globals";
 
 export default [
   {
-    ignores: ["node_modules/", "coverage/", "vendor/", "*.zip"]
+    ignores: ["node_modules/", "coverage/", "dist/", "vendor/", "*.zip"]
   },
   js.configs.recommended,
   {

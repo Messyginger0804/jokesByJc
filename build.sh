@@ -1,6 +1,7 @@
 #!/usr/bin/env sh
 # Packages the extension for the Chrome Web Store.
-# Only runtime files are included (no .git, notes, editor settings or test scripts).
+# Allowlist of runtime files only: no .git, node_modules, tests, scripts, docs or editor settings.
+# npm run check:package verifies the result.
 set -eu
 cd "$(dirname "$0")"
 
