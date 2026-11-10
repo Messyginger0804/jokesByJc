@@ -136,15 +136,22 @@ describe("cached joke on open", () => {
     expect(document.activeElement).not.toBe(button("joke-button"));
   });
 
-  it("restores a joke whose punchline was shown with the cool pose", async () => {
+  it("restores a revealed joke with its setup and punchline and the cool pose", async () => {
     await load({ store: { lastJoke: { ...TWO_PART, punchlineShown: true } } });
+    expect(text()).toBe(`${TWO_PART.setup} ${TWO_PART.punchline}`);
     expect(motion.playState).toHaveBeenLastCalledWith("restore", { pose: "coolguy" });
     expect(buttons().map((b) => b.id)).toEqual(["joke-again-button"]);
   });
 
   it("treats the older cache format (no punchlineShown) as already shown", async () => {
     await load({ store: { lastJoke: { setup: "Old", punchline: "Format" } } });
+    expect(text()).toBe("Old Format");
     expect(buttons().map((b) => b.id)).toEqual(["joke-again-button"]);
+  });
+
+  it("restores a one-liner as just its text", async () => {
+    await load({ store: { lastJoke: { ...ONE_LINER, punchlineShown: true } } });
+    expect(text()).toBe(ONE_LINER.setup);
   });
 
   it("restores a one-liner with the another-joke button", async () => {

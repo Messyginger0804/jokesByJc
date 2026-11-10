@@ -66,12 +66,14 @@ export async function loadCachedJoke() {
   if (!joke) return;
 
   currentJoke = joke;
-  setJokeText(joke.setup);
   // Undefined punchlineShown (older cache format) is treated as already shown.
   if (!joke.isOneLiner && lastJoke.punchlineShown === false) {
+    setJokeText(joke.setup);
     playState("restore", { pose: "pointing" });
     showPunchlineButton({ focus: false });
   } else {
+    // Already revealed: show the whole joke, so the punchline the user last saw is still there.
+    setJokeText(joke.isOneLiner ? joke.setup : `${joke.setup} ${joke.punchline}`);
     playState("restore", { pose: "coolguy" });
     showAnotherJokeButton({ focus: false });
   }

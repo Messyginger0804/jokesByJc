@@ -12,7 +12,8 @@ A Chrome extension (Manifest V3) where an animated character tells you a joke.
 - **Reduced motion** - With "reduce motion" turned on in the OS, every animation becomes a short
   fade or an instant change, and confetti and tilt are off (changes apply live)
 - **Daily joke** - A joke window opens automatically once per day
-- **Remembers your last joke** - Reopening the popup shows the last joke right away
+- **Remembers your last joke** - Reopening the popup shows the last joke right away: the setup with
+  the punchline button if you had not revealed it yet, otherwise the setup and punchline together
 - **Links** - Footer links to [dfwsc.com](https://dfwsc.com) and [www.byjc.dev](https://www.byjc.dev)
 
 ## Installation
