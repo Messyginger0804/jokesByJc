@@ -346,6 +346,22 @@ describe("joke flow", () => {
     expect(chrome.storage.local.data.lastJoke.setup).toBe("Second");
   });
 
+  it("clears the superseded request's thinking timer and lets it finish", async () => {
+    await load({ reduced: true });
+    jokes.fetchJoke.mockResolvedValue(TWO_PART);
+    const first = popup.initializeJoke();
+    await settle();
+    expect(vi.getTimerCount()).toBe(1);
+    const second = popup.initializeJoke();
+    await settle();
+    // Only the newer request's 2 s timer is left, and the older request has returned.
+    expect(vi.getTimerCount()).toBe(1);
+    await expect(first).resolves.toBeUndefined();
+    await vi.advanceTimersByTimeAsync(2000);
+    await second;
+    expect(text()).toBe(TWO_PART.setup);
+  });
+
   it("ignores a superseded request whose cache read resolves late", async () => {
     await load();
     jokes.fetchJoke.mockResolvedValueOnce(null);

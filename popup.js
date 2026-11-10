@@ -9,6 +9,9 @@ let currentJoke = null;
 let requestId = 0;
 // Handle of the active typewriter timer, so a new animation cancels the old one.
 let typingTimer = null;
+// The pending request's minimum "thinking" delay; a newer request clears it.
+let thinkingTimer = null;
+let endThinking = null;
 
 export function storageGet(key) {
   return new Promise((resolve) => {
@@ -77,6 +80,24 @@ export async function loadCachedJoke() {
     playState("restore", { pose: "coolguy" });
     showAnotherJokeButton({ focus: false });
   }
+}
+
+/**
+ * Resolves after MIN_THINKING_MS. Starting a new wait clears the previous one's timer and
+ * resolves it at once, so a superseded request returns instead of holding a stray timer.
+ */
+function waitMinThinking() {
+  if (thinkingTimer) {
+    clearTimeout(thinkingTimer);
+    endThinking();
+  }
+  return new Promise((resolve) => {
+    endThinking = resolve;
+    thinkingTimer = setTimeout(() => {
+      thinkingTimer = null;
+      resolve();
+    }, MIN_THINKING_MS);
+  });
 }
 
 function cancelTyping() {
@@ -227,7 +248,7 @@ export async function initializeJoke() {
   typeWriterEffect("Thinking of a good one...");
 
   const previousSetup = currentJoke && currentJoke.setup;
-  const minDelay = new Promise((resolve) => setTimeout(resolve, MIN_THINKING_MS));
+  const minDelay = waitMinThinking();
   let joke = await fetchJoke(previousSetup);
   await minDelay;
   if (myRequest !== requestId) return;
