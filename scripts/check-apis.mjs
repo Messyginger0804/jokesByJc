@@ -1,5 +1,5 @@
 // Manual smoke test against the live joke sources (not run in CI: it depends on third-party uptime).
-// Usage: npm run check:apis   (Node 18+)
+// Usage: npm run check:apis   (Node 22.12+, the same as package.json engines)
 // Uses the same source list and parsers as the popup (jokes.js), so they cannot drift.
 import { byjcApi, fallbackApis, fetchJokeFrom } from "../jokes.js";
 
