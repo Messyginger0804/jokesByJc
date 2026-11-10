@@ -44,15 +44,35 @@ function waitForAlarm(worker, name) {
 }
 
 describe("extension load", () => {
-  it("registers the hourly daily-popup alarm on install", () =>
+  it("schedules no daily-popup alarm on a fresh install", () =>
     withExtension(async (ext) => {
-      const alarm = await waitForAlarm(await ext.worker.worker(), "dailyPopup");
+      const worker = await ext.worker.worker();
+      // Let onInstalled finish, then confirm it left nothing scheduled.
+      await new Promise((r) => setTimeout(r, 1500));
+      assert.equal(await worker.evaluate(() => chrome.alarms.get("dailyPopup")), undefined);
+    }));
+
+  it("registers the hourly alarm when the daily joke is turned on, and clears it when turned off", () =>
+    withExtension(async (ext) => {
+      const worker = await ext.worker.worker();
+      await seedStorage(ext, { dailyPopupEnabled: true });
+      const alarm = await waitForAlarm(worker, "dailyPopup");
       assert.equal(alarm.periodInMinutes, 60);
+
+      await seedStorage(ext, { dailyPopupEnabled: false });
+      await worker.evaluate(
+        () =>
+          new Promise((resolve) => {
+            const poll = async () => ((await chrome.alarms.get("dailyPopup")) ? setTimeout(poll, 100) : resolve());
+            poll();
+          })
+      );
     }));
 
   it("opens the daily popup window once when the startup alarm fires", () =>
     withExtension(async (ext) => {
       const worker = await ext.worker.worker();
+      await seedStorage(ext, { dailyPopupEnabled: true });
       await waitForAlarm(worker, "dailyPopup");
       const opened = ext.browser.waitForTarget(isPopupWindow, { timeout: 10000 });
       // Unpacked extensions may schedule alarms below the 30 s minimum.
@@ -70,6 +90,14 @@ describe("extension load", () => {
       await worker.evaluate(() => chrome.alarms.create("dailyPopupStartup", { when: Date.now() + 200 }));
       await new Promise((r) => setTimeout(r, 1500));
       assert.equal(reopened, 0);
+    }));
+
+  it("shows the daily joke toggle off by default and remembers it when turned on", () =>
+    withExtension(async (ext) => {
+      const { page } = await openPopup(ext);
+      assert.equal(await page.$eval("#daily-toggle", (el) => el.checked), false);
+      await page.click("#daily-toggle");
+      await page.waitForFunction(async () => (await chrome.storage.local.get("dailyPopupEnabled")).dailyPopupEnabled === true);
     }));
 
   it("opens with the intro, both buttons and the logo rendered", () =>

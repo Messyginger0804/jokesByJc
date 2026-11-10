@@ -31,6 +31,7 @@ export function createChrome({ store = {}, alarms = {} } = {}) {
       onStartup: event()
     },
     storage: {
+      onChanged: event(),
       local: {
         data,
         get: vi.fn((keys, callback) => {
@@ -64,7 +65,8 @@ export function createChrome({ store = {}, alarms = {} } = {}) {
       }),
       create: vi.fn(async (name, info) => {
         alarmMap.set(name, { ...info });
-      })
+      }),
+      clear: vi.fn(async (name) => alarmMap.delete(name))
     },
     windows: {
       create: vi.fn(async (options) => ({ id: 1, ...options }))

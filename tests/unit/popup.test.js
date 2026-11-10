@@ -88,6 +88,28 @@ describe("popup start-up", () => {
   });
 });
 
+describe("daily joke toggle", () => {
+  const toggle = () => document.getElementById("daily-toggle");
+
+  it("is off when nothing is stored", async () => {
+    await load();
+    expect(toggle().checked).toBe(false);
+  });
+
+  it("reflects a stored on setting", async () => {
+    await load({ store: { dailyPopupEnabled: true } });
+    expect(toggle().checked).toBe(true);
+  });
+
+  it("saves the setting when toggled", async () => {
+    await load();
+    toggle().click();
+    expect(chrome.storage.local.data.dailyPopupEnabled).toBe(true);
+    toggle().click();
+    expect(chrome.storage.local.data.dailyPopupEnabled).toBe(false);
+  });
+});
+
 describe("DFWSC logo fallback", () => {
   const lockup = () => document.querySelector(".ad-lockup");
   const fallback = () => document.querySelector(".ad-logo-tile .ad-fallback");

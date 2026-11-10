@@ -1,6 +1,8 @@
 import { playState, buttonIn } from "./motion.js";
 import { fetchJoke, normalizeJoke } from "./jokes.js";
 
+// Same key background.js reads; absent or anything but true means the daily window is off.
+const DAILY_POPUP_KEY = "dailyPopupEnabled";
 const MIN_THINKING_MS = 2000;
 const TYPE_SPEED_MS = 50;
 
@@ -238,7 +240,15 @@ export function initializePopup() {
   document.getElementById("no-button").addEventListener("click", closePopup);
   document.getElementById("close-popup").addEventListener("click", closePopup);
 
+  initializeDailyToggle();
   loadCachedJoke();
+}
+
+async function initializeDailyToggle() {
+  const toggle = document.getElementById("daily-toggle");
+  const stored = await storageGet(DAILY_POPUP_KEY);
+  toggle.checked = stored[DAILY_POPUP_KEY] === true;
+  toggle.addEventListener("change", () => storageSet({ [DAILY_POPUP_KEY]: toggle.checked }));
 }
 
 export async function initializeJoke() {
