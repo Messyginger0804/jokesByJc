@@ -7,7 +7,8 @@ import {
   shuffle,
   fetchJokeFrom,
   fetchJoke,
-  FETCH_TIMEOUT_MS
+  FETCH_TIMEOUT_MS,
+  TOTAL_TIMEOUT_MS
 } from "../../jokes.js";
 
 const json = (body, status = 200) => ({ ok: status >= 200 && status < 300, status, json: async () => body });
@@ -147,6 +148,17 @@ describe("fetchJokeFrom", () => {
     );
     await expect(fetchJokeFrom(byjcApi, { timeoutMs: 20 })).rejects.toMatchObject({ name: "TimeoutError" });
   });
+
+  it("also aborts when the caller's signal fires first", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((url, { signal }) => new Promise((resolve, reject) => signal.addEventListener("abort", () => reject(signal.reason))))
+    );
+    const controller = new AbortController();
+    const pending = fetchJokeFrom(byjcApi, { timeoutMs: 60_000, signal: controller.signal });
+    controller.abort(new DOMException("deadline", "TimeoutError"));
+    await expect(pending).rejects.toMatchObject({ name: "TimeoutError", message: "deadline" });
+  });
 });
 
 describe("fetchJoke chain", () => {
@@ -186,6 +198,36 @@ describe("fetchJoke chain", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
     expect(await fetchJoke(null, { ...inOrder, timeoutMs: 20 })).toMatchObject({ setup: "S2" });
+  });
+
+  it("gives up at the overall deadline instead of waiting out every source", async () => {
+    const hang = (url, { signal }) => new Promise((resolve, reject) => signal.addEventListener("abort", () => reject(signal.reason)));
+    const fetchMock = routeFetch({
+      "www.byjc.dev": hang,
+      "official-joke-api.appspot.com": hang,
+      "v2.jokeapi.dev": hang,
+      "icanhazdadjoke.com": hang
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const started = performance.now();
+    // Per source 60 ms, whole chain 100 ms: byjc times out, the next source is cut off by the
+    // deadline, and the last two are never tried.
+    expect(await fetchJoke(null, { ...inOrder, timeoutMs: 60, totalTimeoutMs: 100 })).toBeNull();
+    const elapsed = performance.now() - started;
+    expect(hosts(fetchMock)).toEqual(["www.byjc.dev", "official-joke-api.appspot.com"]);
+    expect(elapsed).toBeGreaterThanOrEqual(95);
+    expect(elapsed).toBeLessThan(400);
+    expect(console.warn).toHaveBeenCalledWith("Joke sources gave up after the overall deadline");
+  });
+
+  it("uses an overall deadline shorter than four source timeouts by default", async () => {
+    expect(TOTAL_TIMEOUT_MS).toBe(8000);
+    expect(TOTAL_TIMEOUT_MS).toBeLessThan(4 * FETCH_TIMEOUT_MS);
+    const timeout = vi.spyOn(AbortSignal, "timeout");
+    vi.stubGlobal("fetch", routeFetch({ "www.byjc.dev": json({ setup: "S", punchline: "P" }) }));
+    await fetchJoke(null, inOrder);
+    expect(timeout).toHaveBeenCalledWith(TOTAL_TIMEOUT_MS);
+    expect(timeout).toHaveBeenCalledWith(FETCH_TIMEOUT_MS);
   });
 
   it("resolves null when every source fails", async () => {

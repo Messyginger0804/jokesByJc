@@ -2,6 +2,8 @@
 // popup.js and scripts/check-apis.mjs (Node).
 
 export const FETCH_TIMEOUT_MS = 5000;
+// Deadline for the whole chain, so "Thinking..." never waits out four 5 s timeouts in a row.
+export const TOTAL_TIMEOUT_MS = 8000;
 
 export const byjcApi = {
   name: "byjc API",
@@ -74,11 +76,12 @@ export function shuffle(list, random = Math.random) {
   return copy;
 }
 
-export async function fetchJokeFrom(api, { timeoutMs = FETCH_TIMEOUT_MS } = {}) {
+export async function fetchJokeFrom(api, { timeoutMs = FETCH_TIMEOUT_MS, signal } = {}) {
+  const timeout = AbortSignal.timeout(timeoutMs);
   const response = await fetch(api.url, {
     headers: api.headers,
     cache: "no-store",
-    signal: AbortSignal.timeout(timeoutMs)
+    signal: signal ? AbortSignal.any([timeout, signal]) : timeout
   });
   if (!response.ok) throw new Error(`${api.name} returned HTTP ${response.status}`);
   const joke = normalizeJoke(api.parseJoke(await response.json()));
@@ -87,14 +90,19 @@ export async function fetchJokeFrom(api, { timeoutMs = FETCH_TIMEOUT_MS } = {}) 
 }
 
 /**
- * Tries the byjc API first, then every fallback API in random order.
+ * Tries the byjc API first, then every fallback API in random order, within one overall deadline.
  * Skips a joke whose setup matches previousSetup so "another joke" never repeats.
- * Resolves with a joke, or null if every source failed.
+ * Resolves with a joke, or null if every source failed or the deadline passed.
  */
-export async function fetchJoke(previousSetup, { random = Math.random, timeoutMs } = {}) {
+export async function fetchJoke(previousSetup, { random = Math.random, timeoutMs, totalTimeoutMs = TOTAL_TIMEOUT_MS } = {}) {
+  const deadline = AbortSignal.timeout(totalTimeoutMs);
   for (const api of [byjcApi, ...shuffle(fallbackApis, random)]) {
+    if (deadline.aborted) {
+      console.warn("Joke sources gave up after the overall deadline");
+      break;
+    }
     try {
-      const joke = await fetchJokeFrom(api, { timeoutMs });
+      const joke = await fetchJokeFrom(api, { timeoutMs, signal: deadline });
       if (previousSetup && joke.setup === previousSetup) {
         console.warn(`Joke source repeated the current joke (${api.name})`);
         continue;

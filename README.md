@@ -32,6 +32,7 @@ see `vendor/README.md` for versions and the command used to rebuild them.
 - If that fails or takes longer than 5 seconds, the popup tries these fallbacks in random order:
   [Official Joke API](https://official-joke-api.appspot.com/random_joke),
   [JokeAPI](https://v2.jokeapi.dev) and [icanhazdadjoke](https://icanhazdadjoke.com)
+- The whole search stops after 8 seconds, so "Thinking..." never waits out every timeout in turn
 - If every source fails, the last cached joke is shown (unless it is the one already on screen); otherwise a "Try again" button appears
 - The last joke is stored in `chrome.storage.local`
 - `background.js` runs an hourly `chrome.alarms` check (plus one shortly after the browser starts)
