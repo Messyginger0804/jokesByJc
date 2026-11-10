@@ -20,7 +20,7 @@ export default [
   },
   {
     // Dev tooling and tests run in Node.
-    files: ["scripts/**/*.mjs", "tests/**/*.{js,mjs}", "*.config.js"],
+    files: ["scripts/**/*.mjs", "store/scripts/**/*.mjs", "tests/**/*.{js,mjs}", "*.config.js"],
     languageOptions: {
       ecmaVersion: 2024,
       sourceType: "module",
