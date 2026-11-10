@@ -9,17 +9,15 @@ export default defineConfig({
     unstubGlobals: true,
     coverage: {
       provider: "v8",
-      // Shipped first-party code only.
-      include: ["background.js", "popup.js"],
+      // Shipped first-party code only. vendor/ is third-party, pre-built and not tested here.
+      include: ["background.js", "popup.js", "motion.js", "jokes.js"],
       reporter: ["text", "html", "json-summary", "lcov"],
       reportsDirectory: "coverage",
-      // Floors at what the current code reaches without behaviour changes (lines 98.97%,
-      // statements 97.51%, branches 74.52%, functions 100%). Raise them as tests are added.
       thresholds: {
-        lines: 98,
+        lines: 100,
         functions: 100,
-        statements: 97,
-        branches: 74
+        statements: 100,
+        branches: 100
       }
     }
   }

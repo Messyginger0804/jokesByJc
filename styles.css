@@ -3,12 +3,13 @@
     --bg-card: #1e1e1e;
     --text-main: #e0e0e0;
     --text-muted: #a0a0a0;
-    --accent-blue: #3b82f6;
-    --accent-blue-hover: #2563eb;
-    --accent-green: #10b981;
-    --accent-green-hover: #059669;
+    /* White text on these fills meets WCAG AA (4.5:1). */
+    --accent-blue: #2563eb;
+    --accent-blue-hover: #1d4ed8;
+    --accent-green: #047857;
+    --accent-green-hover: #065f46;
     --accent-red: #ef4444;
-    --accent-red-hover: #dc2626;
+    --ring-blue: rgba(96, 165, 250, 0.6);
     --shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
     --border-radius-lg: 24px;
     --border-radius-md: 16px;
@@ -18,7 +19,8 @@
 body {
     margin: 0;
     padding: 10px;
-    width: 480px; /* Slightly narrower for better fit */
+    width: 480px;
+    box-sizing: border-box;
     height: auto;
     font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     background-color: var(--bg-dark);
@@ -51,8 +53,11 @@ body {
 /* Footer */
 .footer {
     margin-top: 24px;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding-top: 16px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
 }
 
 /* Popup Container */
@@ -68,34 +73,46 @@ body {
     flex-direction: column;
     justify-content: space-between;
     box-sizing: border-box;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-/* Close Button */
+/* Hidden until motion.js plays the intro. If the script never runs, the
+   delayed fallback animation still reveals the card. */
+.pre-intro .popup-container {
+    opacity: 0;
+    animation: reveal-fallback 0.01s linear 1.2s forwards;
+}
+
+@keyframes reveal-fallback {
+    to { opacity: 1; }
+}
 .close-button {
     position: absolute;
-    top: 16px;
-    right: 16px;
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--text-muted);
-    border: none;
+    top: 20px;
+    right: 20px;
+    background: rgba(255, 255, 255, 0.16);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.3);
     border-radius: 50%;
     width: 32px;
     height: 32px;
-    font-size: 10px;
+    font-size: 20px;
+    line-height: 1;
     font-weight: bold;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s ease;
+    transition: background-color 0.2s ease, border-color 0.2s ease, rotate 0.2s ease;
     z-index: 20;
 }
 
+/* Uses the individual `rotate` property so it does not fight the press spring on `transform`. */
 .close-button:hover {
     background: var(--accent-red);
+    border-color: transparent;
     color: white;
-    transform: rotate(90deg);
+    rotate: 90deg;
 }
 
 /* Flex Container for Joke and Avatar */
@@ -106,6 +123,11 @@ body {
     gap: 20px;
     padding: 10px 0 20px 0;
     position: relative;
+}
+
+/* Pointer tilt / idle sway, driven by CSS variables from motion.js. */
+.stage {
+    transform: perspective(800px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
 }
 
 /* Joke Container */
@@ -121,6 +143,9 @@ body {
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
     position: relative;
     border: 1px solid rgba(255, 255, 255, 0.1);
+    /* Springs grow out of the tail, next to the avatar. */
+    transform-origin: 100% 100%;
+    translate: var(--parallax-bubble, 0 0);
 }
 
 /* Speech bubble pointer */
@@ -135,16 +160,71 @@ body {
     border-top: 10px solid transparent;
 }
 
-/* Avatar Image */
-.avatar {
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    transform: scaleX(-1);
-    object-fit: contain;
-    background: rgba(255, 255, 255, 0.05);
-    padding: 5px;
+/* Avatar: stage (parallax) > breathe (idle) > body (state animations, ring) > flip (mirror) > poses */
+.avatar-stage {
     flex-shrink: 0;
+    width: 108px;
+    height: 108px;
+    /* Room for the ring so it stays inside the content edge. */
+    margin-right: 6px;
+    translate: var(--parallax-avatar, 0 0);
+}
+
+.avatar-breathe,
+.avatar-body,
+.avatar-flip {
+    width: 100%;
+    height: 100%;
+}
+
+.avatar-breathe,
+.avatar-body {
+    transform-origin: 50% 100%;
+}
+
+.avatar-body {
+    border-radius: 50%;
+    overflow: hidden;
+    background: radial-gradient(circle at 50% 30%, #34405a 0%, #1f2533 72%);
+    box-shadow:
+        0 0 0 2px var(--ring-blue),
+        0 0 0 6px rgba(59, 130, 246, 0.12),
+        0 0 28px rgba(59, 130, 246, 0.2),
+        0 10px 24px rgba(0, 0, 0, 0.45);
+}
+
+.avatar-flip {
+    position: relative;
+    transform: scaleX(-1);
+}
+
+/* Poses are stacked and crossfaded; only the intro pose is visible before any script runs. */
+.pose {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    width: calc(100% - 12px);
+    height: calc(100% - 12px);
+    object-fit: contain;
+    opacity: 0;
+}
+
+.pose[data-pose="intro"] {
+    opacity: 1;
+}
+
+.pose-unflip {
+    transform: scaleX(-1);
+}
+
+/* Full-popup confetti layer, created on demand. */
+.confetti-canvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 50;
 }
 
 /* Button Container */
@@ -165,17 +245,32 @@ body {
     font-size: 15px;
     font-weight: 600;
     color: white;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, translate 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
+/* Hover lift uses `translate` so it composes with the press spring on `transform`. */
 .button:hover {
-    transform: translateY(-2px);
+    translate: 0 -2px;
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
 }
 
 .button:active {
-    transform: translateY(0);
+    translate: 0 0;
+}
+
+.button:disabled {
+    opacity: 0.6;
+    cursor: wait;
+    translate: none;
+    box-shadow: none;
+}
+
+.button:focus-visible,
+.close-button:focus-visible,
+.ad-container:focus-visible {
+    outline: 2px solid #ffffff;
+    outline-offset: 2px;
 }
 
 /* Blue Button */
@@ -187,13 +282,19 @@ body {
     background-color: var(--accent-blue-hover);
 }
 
-/* Red Button */
-.button-red {
-    background-color: var(--accent-red);
+/* Secondary Button ("No"): quieter than the primary action */
+.button-secondary {
+    background-color: transparent;
+    color: #d4d4d4;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    box-shadow: none;
 }
 
-.button-red:hover {
-    background-color: var(--accent-red-hover);
+.button-secondary:hover {
+    background-color: rgba(255, 255, 255, 0.07);
+    border-color: rgba(255, 255, 255, 0.35);
+    color: #ffffff;
+    box-shadow: none;
 }
 
 /* Green Button */
@@ -220,4 +321,29 @@ body {
     color: var(--text-muted);
     font-style: italic;
     opacity: 0.8;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+    }
+
+    .pre-intro .popup-container {
+        opacity: 1;
+    }
+
+    .button:hover,
+    .close-button:hover,
+    .ad-container:hover {
+        translate: none;
+        rotate: none;
+    }
+
+    .stage,
+    #joke-container,
+    .avatar-stage {
+        transform: none;
+        translate: none;
+    }
 }

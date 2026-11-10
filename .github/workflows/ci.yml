@@ -9,14 +9,14 @@ permissions:
   contents: read
 
 # One run per PR (or per branch for pushes to main). New commits on a PR cancel its
-# older run; runs on main are never cancelled.
+# older run; runs on main are never cancelled, so every merge keeps its release zip.
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   checks:
-    name: Lint and unit tests
+    name: Lint, unit tests, package
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     env:
@@ -30,7 +30,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint
-      - name: Unit tests with coverage thresholds
+      - name: Unit tests with coverage (fails under 100%)
         run: npm run coverage
       - name: Coverage summary
         if: always()
@@ -38,6 +38,12 @@ jobs:
           if [ -f coverage/coverage-summary.json ]; then
             node -e 'const t=require("./coverage/coverage-summary.json").total; const row=k=>`| ${k} | ${t[k].pct}% | ${t[k].covered}/${t[k].total} |`; console.log(["### Unit test coverage","| Metric | % | Covered |","|---|---|---|",...["lines","branches","functions","statements"].map(row)].join("\n"))' >> "$GITHUB_STEP_SUMMARY"
           fi
+      - run: npm run check:package
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: jokesByJc-extension
+          path: jokesByJc-extension.zip
+          if-no-files-found: error
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
@@ -46,9 +52,13 @@ jobs:
           if-no-files-found: ignore
 
   e2e:
-    name: E2E
+    name: E2E (${{ matrix.target }})
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [source, package]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -62,5 +72,10 @@ jobs:
           key: puppeteer-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       # npm ci runs puppeteer's install script, which downloads Chrome for Testing unless cached.
       - run: npm ci
-      - name: E2E against the unpacked extension
+      - name: Build and unpack the package
+        if: matrix.target == 'package'
+        run: npm run check:package
+      - name: E2E against the unpacked ${{ matrix.target }}
+        env:
+          EXT_DIR: ${{ matrix.target == 'package' && 'dist/unpacked' || '.' }}
         run: npm run e2e

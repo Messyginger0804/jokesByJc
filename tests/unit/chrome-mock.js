@@ -1,5 +1,5 @@
 // Minimal in-memory chrome.* mock covering the APIs this extension uses.
-// storage.local and alarms support both the promise form and the callback form.
+// storage.local supports both the promise form (background.js) and the callback form (popup.js).
 import { vi } from "vitest";
 
 function event() {
@@ -64,14 +64,6 @@ export function createChrome({ store = {}, alarms = {} } = {}) {
       }),
       create: vi.fn(async (name, info) => {
         alarmMap.set(name, { ...info });
-      }),
-      clearAll: vi.fn((callback) => {
-        alarmMap.clear();
-        if (callback) {
-          queueMicrotask(() => callback(true));
-          return undefined;
-        }
-        return Promise.resolve(true);
       })
     },
     windows: {
