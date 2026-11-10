@@ -44,12 +44,11 @@ export function storageSet(items) {
  * Saves the joke so it can be shown instantly when the popup is reopened.
  */
 export function cacheJoke(joke, punchlineShown = false) {
-  if (!joke || !joke.setup) return;
   storageSet({
     lastJoke: {
       setup: joke.setup,
-      punchline: joke.punchline || null,
-      isOneLiner: !!joke.isOneLiner,
+      punchline: joke.punchline,
+      isOneLiner: joke.isOneLiner,
       punchlineShown,
       timestamp: Date.now()
     }
@@ -100,7 +99,8 @@ const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)")
  * Types text into the joke element. Starting a new animation cancels any running one.
  * Respects prefers-reduced-motion and sets aria-busy so screen readers announce only the final text.
  * @param {string} text - The text to type out.
- * @param {function} [callback] - Called once typing finishes (not called if cancelled).
+ * @param {function} [callback] - Called once typing finishes. Not called if the animation is
+ *   cancelled, which is how a newer request supersedes an older one's follow-up step.
  */
 export function typeWriterEffect(text, callback) {
   cancelTyping();
@@ -147,7 +147,7 @@ function renderButton({ id, label, ariaLabel, className, onClick, focus = true }
   button.id = id;
   button.className = `button ${className}`;
   button.textContent = label;
-  if (ariaLabel) button.setAttribute("aria-label", ariaLabel);
+  button.setAttribute("aria-label", ariaLabel);
   button.addEventListener("click", onClick);
   buttonContainer.replaceChildren(button);
   buttonIn(button);
@@ -187,7 +187,7 @@ function showRetryButton() {
   renderButton({
     id: "retry-button",
     label: "Try again",
-    ariaLabel: "Try fetching a joke again",
+    ariaLabel: "Try again to fetch a joke",
     className: "button-blue",
     onClick: initializeJoke
   });
@@ -224,33 +224,32 @@ export async function initializeJoke() {
   playState(currentJoke ? "again" : "thinking");
   typeWriterEffect("Thinking of a good one...");
 
+  const previousSetup = currentJoke && currentJoke.setup;
   const minDelay = new Promise((resolve) => setTimeout(resolve, MIN_THINKING_MS));
-  let joke = await fetchJoke(currentJoke && currentJoke.setup);
+  let joke = await fetchJoke(previousSetup);
   await minDelay;
   if (myRequest !== requestId) return;
 
   if (joke) {
     cacheJoke(joke);
   } else {
-    // Every source failed: fall back to the last cached joke, if any.
+    // Every source failed: fall back to the last cached joke, unless it is the one on screen.
     const { lastJoke } = await storageGet("lastJoke");
     if (myRequest !== requestId) return;
     joke = normalizeJoke(lastJoke);
+    if (joke && joke.setup === previousSetup) joke = null;
   }
 
   if (!joke) {
     currentJoke = null;
     playState("error");
-    typeWriterEffect("Oops! Could not fetch a joke.", () => {
-      if (myRequest === requestId) showRetryButton();
-    });
+    typeWriterEffect("Oops! Could not fetch a joke.", showRetryButton);
     return;
   }
 
   currentJoke = joke;
   playState("setup");
   typeWriterEffect(joke.setup, () => {
-    if (myRequest !== requestId) return;
     if (joke.isOneLiner) {
       playState("punch");
       showAnotherJokeButton();
@@ -263,21 +262,17 @@ export async function initializeJoke() {
 
 export function revealPunchline() {
   const joke = currentJoke;
-  const myRequest = requestId;
   setActionButtonsDisabled(true);
 
   if (!joke || !joke.punchline) {
     playState("error");
-    typeWriterEffect("Oops, the punchline got lost! Try another one.", () => {
-      if (myRequest === requestId) showAnotherJokeButton();
-    });
+    typeWriterEffect("Oops, the punchline got lost! Try another one.", showAnotherJokeButton);
     return;
   }
 
   cacheJoke(joke, true);
   playState("setup");
   typeWriterEffect(joke.punchline, () => {
-    if (myRequest !== requestId) return;
     playState("punch");
     showAnotherJokeButton();
   });
