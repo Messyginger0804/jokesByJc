@@ -38,11 +38,12 @@ export const fallbackApis = [
  */
 export function splitOneLiner(joke) {
   if (typeof joke !== "string") return null;
-  for (const pattern of [" - ", "? ", "! "]) {
+  // "?" and "!" stay on the setup; a " - " separator is dropped.
+  for (const [pattern, keep] of [[" - ", ""], ["? ", "?"], ["! ", "!"]]) {
     const index = joke.indexOf(pattern);
     if (index > 0 && index < joke.length - 5) {
       return {
-        setup: joke.substring(0, index + pattern.trim().length),
+        setup: joke.substring(0, index) + keep,
         punchline: joke.substring(index + pattern.length)
       };
     }
