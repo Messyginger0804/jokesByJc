@@ -18,6 +18,6 @@ Primary source is the byjc API; on failure or after 5 seconds the other public A
 Everything is in `chrome.storage.local`: last joke (with a flag for whether the punchline was shown), date of the last daily popup, and `dailyPopupEnabled` (missing means off).
 
 ## Gotchas
-- Any new runtime file must be added to the allowlist in `build.sh`, or it will not ship (and `npm run check:package` will fail on unexpected files).
+- Any new runtime file must be added to both lists: the allowlist in `build.sh` and `SHIPPED_FILES` / `SHIPPED_DIRS` in `scripts/check-package.mjs`. Added only to `build.sh`, it is reported as an unexpected file and `npm run check:package` fails. Missing from both, it is neither shipped nor flagged, so the check does not catch every omitted runtime file.
 - Adding a permission or host permission changes the Web Store review and listing justifications; update `store/SUBMISSION.md`.
 - `*.zip` and `coverage/` are git-ignored; the zip is never committed.

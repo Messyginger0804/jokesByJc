@@ -4,9 +4,9 @@ The extension is already published on the Chrome Web Store. Updates go to the ex
 
 ## Ship a release
 1. In a PR, bump `version` in `manifest.json` and the "Version" section of `README.md` (the package check fails if they differ). Each upload must have a higher version than the one published. Update `store/SUBMISSION.md` if the listing text, permissions or assets changed. Merge to `main`.
-2. Tag the merge commit and push the tag: `git tag -a vX.Y -m 'vX.Y' && git push origin vX.Y`.
+2. Tag the merge commit and push the tag: `git tag -a vX.Y -m 'vX.Y' <merge-commit-sha> && git push origin vX.Y` (pass the merge commit's SHA from `main` explicitly; a bare `git tag` tags the current HEAD, which may not be that commit).
 3. `.github/workflows/release.yml` (triggered by `v*` tags) checks the tag is `vX.Y[.Z]` and equals the manifest version, reruns full CI, runs `build.sh`, and publishes a GitHub release with `jokesByJc-vX.Y.zip` and a `.sha256` file.
-4. Download that release zip (verify with `sha256sum -c`) and upload it as-is in the developer dashboard, on the listing's Package tab ("Upload new package"). Do not rebuild locally or zip the repo folder.
+4. Download that release zip (verify with `sha256sum -c jokesByJc-vX.Y.zip.sha256`, run in the directory holding both files) and upload it as-is in the developer dashboard, on the listing's Package tab ("Upload new package"). Do not rebuild locally or zip the repo folder.
 5. Submit for review. Review can take days; the listing text and screenshots from `store/SUBMISSION.md` are entered by hand.
 
 ## Packaging
